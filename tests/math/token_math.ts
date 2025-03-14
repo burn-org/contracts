@@ -6,7 +6,6 @@ export const MULTIPLIER = BigInt(1e19);
 export const SUPPLY_MULTIPLIER = BigInt(1e4);
 export const MAX_TOKEN_SUPPLY = BigInt(10e8) * BigInt(1e6);
 export const FEE_RATE_BASIS_POINT = BigInt(1e8);
-export const U64_MAX = (BigInt(1) << BigInt(64)) - BigInt(1);
 const FIND_ROOT_MAX_ERROR = BigInt(1e5);
 
 export declare type CurveParams = {
@@ -39,7 +38,7 @@ export const CURVE_3_PARAMS: CurveParams = {
     BigInt("8750000000000000000000") * BigInt(web3.LAMPORTS_PER_SOL),
   c_with_sol: BigInt("8774089843750"),
   token_supply_at_boundary: BigInt(1),
-  native_amount_at_boundary: U64_MAX, // dummy value, no one will hold this amount of native tokens
+  native_amount_at_boundary: BigInt("874999999999991225910156250"), // only 1 token left when calculating the curve's native_amount
 };
 export const CURVE_LAST_PARAMS = CURVE_3_PARAMS;
 
@@ -57,10 +56,10 @@ export function find_root(
 ): bigint {
   let target_native_amount = remaining_token_supply_native_amount + pay_amount;
   if (params.k_with_multiplier_sol == CURVE_LAST_PARAMS.k_with_multiplier_sol) {
-    let numerator =
-      MAX_TOKEN_SUPPLY *
-      ceil_div(CURVE_LAST_PARAMS.k_with_multiplier_sol, MULTIPLIER);
-    let denominator = target_native_amount + CURVE_LAST_PARAMS.c_with_sol;
+    let numerator = CURVE_LAST_PARAMS.k_with_multiplier_sol;
+    let denominator =
+      (target_native_amount + CURVE_LAST_PARAMS.c_with_sol) *
+      (MULTIPLIER / MAX_TOKEN_SUPPLY);
     let remaining_token_supply_target = ceil_div(numerator, denominator);
     if (remaining_token_supply_target >= remaining_token_supply) {
       throw new Error("Buy amount too large");

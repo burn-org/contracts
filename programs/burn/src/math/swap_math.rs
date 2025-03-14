@@ -102,7 +102,7 @@ pub fn compute_buy_token_exact_in(pay_amount: u64, remaining_token_supply: u64) 
                 start_native_amount = token_math::calculate_curve(remaining_token_supply, false, curve);
             }
 
-            let remaining_native_amount: u128 = curve.native_amount_at_boundary as u128 - start_native_amount;
+            let remaining_native_amount = curve.native_amount_at_boundary - start_native_amount;
             if pay_amount < remaining_native_amount
                 || curve.k_with_multiplier_sol == token_math::CURVE_LAST_PARAMS.k_with_multiplier_sol
             {
@@ -119,7 +119,7 @@ pub fn compute_buy_token_exact_in(pay_amount: u64, remaining_token_supply: u64) 
                 buy_amount += remaining_token_supply - curve.token_supply_at_boundary;
                 remaining_token_supply = curve.token_supply_at_boundary;
                 pay_amount -= remaining_native_amount;
-                start_native_amount = curve.native_amount_at_boundary as u128;
+                start_native_amount = curve.native_amount_at_boundary;
             }
         }
     }
@@ -143,10 +143,10 @@ pub fn compute_fee(amount: u64) -> u64 {
 }
 #[cfg(test)]
 mod tests {
-    use anchor_lang::solana_program::native_token::LAMPORTS_PER_SOL;
-
     use super::*;
     use crate::constants::MAX_TOKEN_SUPPLY;
+    use anchor_lang::solana_program::native_token::LAMPORTS_PER_SOL;
+    use std::u64;
 
     #[test]
     #[should_panic(expected = "TooMuchNativeTokenRequired")]
@@ -165,7 +165,7 @@ mod tests {
         assert_eq!(y, 0);
 
         let y = compute_swap(MAX_TOKEN_SUPPLY * 20 / 100, MAX_TOKEN_SUPPLY, true).unwrap();
-        assert_eq!(y, token_math::CURVE_1_PARAMS.native_amount_at_boundary);
+        assert_eq!(y as u128, token_math::CURVE_1_PARAMS.native_amount_at_boundary);
 
         let y = compute_swap(
             MAX_TOKEN_SUPPLY * 20 / 100,
@@ -173,7 +173,7 @@ mod tests {
             false,
         )
         .unwrap();
-        assert_eq!(y, token_math::CURVE_1_PARAMS.native_amount_at_boundary);
+        assert_eq!(y as u128, token_math::CURVE_1_PARAMS.native_amount_at_boundary);
     }
 
     #[test]
@@ -191,7 +191,7 @@ mod tests {
         )
         .unwrap();
         assert_eq!(
-            y,
+            y as u128,
             token_math::CURVE_2_PARAMS.native_amount_at_boundary - token_math::CURVE_1_PARAMS.native_amount_at_boundary
         );
 
@@ -202,7 +202,7 @@ mod tests {
         )
         .unwrap();
         assert_eq!(
-            y,
+            y as u128,
             token_math::CURVE_2_PARAMS.native_amount_at_boundary - token_math::CURVE_1_PARAMS.native_amount_at_boundary
         );
     }
@@ -467,6 +467,18 @@ mod tests {
                 remaining_supply: token_math::CURVE_2_PARAMS.token_supply_at_boundary - 11111111111,
                 actual_pay: 3333333333 * 333333333,
             },
+            TestCase {
+                remaining_supply: MAX_TOKEN_SUPPLY,
+                actual_pay: token_math::CURVE_1_PARAMS.native_amount_at_boundary as u64,
+            },
+            TestCase {
+                remaining_supply: MAX_TOKEN_SUPPLY,
+                actual_pay: token_math::CURVE_2_PARAMS.native_amount_at_boundary as u64,
+            },
+            TestCase {
+                remaining_supply: MAX_TOKEN_SUPPLY,
+                actual_pay: u64::MAX,
+            },
         ];
         for case in cases.iter() {
             let buy_amount = compute_buy_token_exact_in(case.actual_pay, case.remaining_supply).unwrap();
@@ -487,6 +499,21 @@ mod tests {
         println!("buy_amount: {}", buy_amount);
         let pay = compute_swap(buy_amount, 997000291850416, true).unwrap();
         println!("pay: {}", pay);
+    }
+
+    #[test]
+    #[should_panic(expected = "BuyAmountTooLarge")]
+    fn test_compute_buy_token_exact_in_remaining_supply_is_2() {
+        compute_buy_token_exact_in(u64::MAX, 2).unwrap();
+    }
+
+    /// Test the case where the remaining supply is 1.
+    /// The loop in the function should be skip because the remaining supply is 1.
+    /// Otherwise, the function will panic.
+    #[test]
+    fn test_compute_buy_token_exact_in_remaining_supply_is_1() {
+        let buy_amount = compute_buy_token_exact_in(u64::MAX, 1).unwrap();
+        assert_eq!(buy_amount, 0);
     }
 
     #[test]

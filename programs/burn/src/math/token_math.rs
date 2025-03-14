@@ -24,7 +24,7 @@ pub struct CurveParams {
     ///
     /// # Formula
     /// [calculate_y(token_supply_at_boundary, true)]
-    pub native_amount_at_boundary: u64,
+    pub native_amount_at_boundary: u128,
 }
 
 pub const CURVE_1_PARAMS: &CurveParams = &CurveParams {
@@ -46,7 +46,7 @@ pub const CURVE_3_PARAMS: &CurveParams = &CurveParams {
     k_with_multiplier_sol: 8750000000000000000000 * LAMPORTS_PER_SOL as u128, // 875 * MULTIPLIER * LAMPORTS_PER_SOL
     c_with_sol: 8774089843750,
     token_supply_at_boundary: 1,
-    native_amount_at_boundary: u64::MAX, // dummy value, no one will hold this amount of native tokens
+    native_amount_at_boundary: 874999999999991225910156250, // only 1 token left when calculating the curve's native_amount
 };
 
 pub const CURVE_LAST_PARAMS: &CurveParams = CURVE_3_PARAMS;
@@ -87,10 +87,11 @@ pub fn find_root(
     if params.k_with_multiplier_sol == CURVE_LAST_PARAMS.k_with_multiplier_sol {
         // y = MAX_TOKEN_SUPPLY * k / x - c
         // x = MAX_TOKEN_SUPPLY * k / (y + c)
-        let numerator =
-            MAX_TOKEN_SUPPLY as u128 * math::ceil_div(CURVE_LAST_PARAMS.k_with_multiplier_sol, MULTIPLIER as u128); // MUST divide by MULTIPLIER to avoid overflow
-        let denominator = target_native_amount + CURVE_LAST_PARAMS.c_with_sol;
+        let numerator = CURVE_LAST_PARAMS.k_with_multiplier_sol;
+        let denominator =
+            (target_native_amount + CURVE_LAST_PARAMS.c_with_sol) * (MULTIPLIER / MAX_TOKEN_SUPPLY) as u128;
         let remaining_token_supply_target = math::ceil_div(numerator, denominator);
+        // last token cannot be sold
         if remaining_token_supply_target >= remaining_token_supply as u128 {
             return Err(MyError::BuyAmountTooLarge.into());
         }
@@ -164,6 +165,8 @@ fn div_with_rounding(numerator: u128, denominator: u128, round_up: bool) -> u128
 
 #[cfg(test)]
 mod tests {
+    use std::u64;
+
     use super::*;
     use crate::constants::MAX_TOKEN_SUPPLY;
 
@@ -249,10 +252,13 @@ mod tests {
             calculate_curve(MAX_TOKEN_SUPPLY * 5 / 100, false, CURVE_LAST_PARAMS),
             8725910156250
         );
-        assert_eq!(calculate_curve(1, true, CURVE_LAST_PARAMS), 874999999999991225910156250);
+        assert_eq!(
+            calculate_curve(1, true, CURVE_LAST_PARAMS),
+            CURVE_LAST_PARAMS.native_amount_at_boundary
+        );
         assert_eq!(
             calculate_curve(1, false, CURVE_LAST_PARAMS),
-            874999999999991225910156250
+            CURVE_LAST_PARAMS.native_amount_at_boundary
         );
     }
 
@@ -433,5 +439,43 @@ mod tests {
 
             step += 0.001;
         }
+    }
+
+    #[test]
+    #[should_panic(expected = "BuyAmountTooLarge")]
+    fn test_find_root_and_pay_amount_is_u64_max() {
+        let amount = find_root(
+            2,
+            calculate_curve(2, true, CURVE_LAST_PARAMS),
+            u64::MAX as u128,
+            CURVE_LAST_PARAMS,
+        )
+        .unwrap();
+        assert_eq!(amount, 1);
+    }
+
+    #[test]
+    #[should_panic(expected = "BuyAmountTooLarge")]
+    fn test_find_root_and_pay_amount_is_u64_max_and_remaining_token_supply_is_1() {
+        let amount = find_root(
+            1,
+            calculate_curve(1, true, CURVE_LAST_PARAMS),
+            u64::MAX as u128,
+            CURVE_LAST_PARAMS,
+        )
+        .unwrap();
+        assert_eq!(amount, 1);
+    }
+
+    #[test]
+    fn test_find_root_and_pay_amount_is_u64_max_and_remaining_token_supply_is_5_percent_of_max_supply() {
+        let amount = find_root(
+            MAX_TOKEN_SUPPLY * 5 / 100,
+            calculate_curve(MAX_TOKEN_SUPPLY * 5 / 100, true, CURVE_LAST_PARAMS),
+            u64::MAX as u128,
+            CURVE_LAST_PARAMS,
+        )
+        .unwrap();
+        assert_eq!(amount, 49999952566199);
     }
 }

@@ -139,7 +139,7 @@ pub fn handler_initialize_market<'a, 'b, 'c, 'info>(
         &ctx.accounts.rent,
         &ctx.accounts.system_program,
         args.name,
-        args.symbol.clone(),
+        args.symbol,
         args.uri,
     )?;
     // Step 4: Mint the total supply to the market vault.
@@ -193,7 +193,7 @@ pub fn handler_initialize_transfer_hook_market<'a, 'b, 'c, 'info>(
         &ctx.accounts.rent,
         &ctx.accounts.system_program,
         args.name,
-        args.symbol.clone(),
+        args.symbol,
         args.uri,
     )?;
     // Step 4: Mint the total supply to the market vault.

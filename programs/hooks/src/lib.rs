@@ -86,15 +86,28 @@ pub mod hooks {
     pub fn transfer_hook(ctx: Context<TransferHook>, _amount: u64) -> Result<()> {
         utils::assert_is_transferring(&ctx.accounts.source_token)?;
 
-        let source_token_owner = ctx.accounts.source_token.owner;
-        let destination_token_owner = ctx.accounts.destination_token.owner;
-        let market_key = ctx.accounts.market.key();
-        let allow_transfer = ctx.accounts.market.free_transfer_allowed
-            || utils::is_allowed_owner(&source_token_owner, &market_key)
-            || utils::is_allowed_owner(&destination_token_owner, &market_key);
-        require!(allow_transfer, Error::TransferNotAllowed);
+        require!(
+            utils::is_transfer_allowed(
+                &ctx.accounts.market,
+                Some(ctx.accounts.source_token.owner),
+                Some(ctx.accounts.destination_token.owner)
+            ),
+            Error::TransferNotAllowed
+        );
 
         Ok(())
+    }
+
+    pub fn is_transfer_allowed(
+        ctx: Context<IsTransferAllowed>,
+        source_token_owner: Option<Pubkey>,
+        destination_token_owner: Option<Pubkey>,
+    ) -> Result<bool> {
+        Ok(utils::is_transfer_allowed(
+            &ctx.accounts.market,
+            source_token_owner,
+            destination_token_owner,
+        ))
     }
 }
 
@@ -108,8 +121,27 @@ pub mod utils {
         },
         token_interface::TokenAccount,
     };
+    use burn::state::Market;
 
     const BLACK_HOLE: Pubkey = pubkey!("1nc1nerator11111111111111111111111111111111");
+
+    pub fn is_transfer_allowed<'info>(
+        market: &Account<'info, Market>,
+        source_token_owner: Option<Pubkey>,
+        destination_token_owner: Option<Pubkey>,
+    ) -> bool {
+        let mut allow_transfer = market.free_transfer_allowed;
+        if let Some(source_token_owner) = source_token_owner {
+            allow_transfer = allow_transfer || is_allowed_owner(&source_token_owner, &market.key());
+        }
+        if let Some(destination_token_owner) = destination_token_owner {
+            allow_transfer = allow_transfer || is_allowed_owner(&destination_token_owner, &market.key());
+        }
+        if !allow_transfer && cfg!(feature = "allow-burn-transfer") {
+            allow_transfer = market.symbol == "BURN";
+        }
+        allow_transfer
+    }
 
     pub fn is_allowed_owner(owner: &Pubkey, market: &Pubkey) -> bool {
         owner.eq(market) || owner.eq(&BLACK_HOLE)
@@ -166,5 +198,10 @@ pub struct TransferHook<'info> {
         has_one = token_mint,
         has_one = config
     )]
+    pub market: Account<'info, Market>,
+}
+
+#[derive(Accounts)]
+pub struct IsTransferAllowed<'info> {
     pub market: Account<'info, Market>,
 }

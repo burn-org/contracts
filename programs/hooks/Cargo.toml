@@ -10,10 +10,12 @@ name = "hooks"
 
 [features]
 default = []
+# default = ["allow-burn-transfer"]
 cpi = ["no-entrypoint"]
 no-entrypoint = []
 no-idl = []
 no-log-ix-name = []
+allow-burn-transfer = []
 idl-build = ["anchor-lang/idl-build", "anchor-spl/idl-build"]
 
 [dependencies]

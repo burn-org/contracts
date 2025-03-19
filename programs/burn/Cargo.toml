@@ -9,14 +9,11 @@ crate-type = ["cdylib", "lib"]
 name = "burn"
 
 [features]
-default = ["localnet"]
+default = []
 cpi = ["no-entrypoint"]
 no-entrypoint = []
 no-idl = []
 no-log-ix-name = []
-localnet = []
-devnet = []
-mainnet = []
 idl-build = ["anchor-lang/idl-build", "anchor-spl/idl-build"]
 
 [dependencies]

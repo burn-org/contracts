@@ -14,10 +14,7 @@ import {
   getTokenMetadata,
   TOKEN_2022_PROGRAM_ID,
 } from "@solana/spl-token";
-import {
-  compute_buy_token_exact_in_with_fee,
-  compute_swap_with_fee,
-} from "./math/swap_math";
+import { compute_buy_token_exact_in_with_fee, compute_swap_with_fee } from "./math/swap_math";
 import { Hooks } from "../target/types/hooks";
 
 (BigInt.prototype as any).toJSON = function () {
@@ -49,25 +46,13 @@ describe("burn", () => {
 
   before(async () => {
     config = await initializeConfig();
-    burn = await initializeMarket(
-      config.configPda,
-      undefined,
-      "BURN",
-      undefined,
-      true
-    );
+    burn = await initializeMarket(config.configPda, undefined, "BURN", undefined, true);
   });
   afterEach(async () => {
     const cfg = await program.account.config.fetch(config.configPda);
-    expect(cfg.authority.toBase58()).to.be.eq(
-      config.authorityKeypair.publicKey.toBase58()
-    );
-    expect(cfg.feeRecipient.toBase58()).to.be.eq(
-      config.feeRecipientKeypair.publicKey.toBase58()
-    );
-    expect(cfg.buyBurnAuthority.toBase58()).to.be.eq(
-      config.buyBurnAuthorityKeypair.publicKey.toBase58()
-    );
+    expect(cfg.authority.toBase58()).to.be.eq(config.authorityKeypair.publicKey.toBase58());
+    expect(cfg.feeRecipient.toBase58()).to.be.eq(config.feeRecipientKeypair.publicKey.toBase58());
+    expect(cfg.buyBurnAuthority.toBase58()).to.be.eq(config.buyBurnAuthorityKeypair.publicKey.toBase58());
   });
 
   describe("#set_config_authority", () => {
@@ -100,16 +85,11 @@ describe("burn", () => {
 
       const cfg = await program.account.config.fetch(config.configPda);
       expect(cfg.authority.toBase58()).to.be.eq(wallet.publicKey.toBase58());
-      expect(cfg.buyBurnAuthority.toBase58()).to.be.eq(
-        wallet.publicKey.toBase58()
-      );
+      expect(cfg.buyBurnAuthority.toBase58()).to.be.eq(wallet.publicKey.toBase58());
 
       // recover authority
       await program.methods
-        .setConfigAuthority(
-          config.authorityKeypair.publicKey,
-          config.buyBurnAuthorityKeypair.publicKey
-        )
+        .setConfigAuthority(config.authorityKeypair.publicKey, config.buyBurnAuthorityKeypair.publicKey)
         .accountsPartial({
           config: config.configPda,
           authority: wallet.publicKey,
@@ -167,24 +147,14 @@ describe("burn", () => {
       [" ", "abc 123", "abc", "ABC ", "ABC 123"].forEach((symbol) => {
         it(`invalid symbol: ${symbol}`, async () => {
           const mintKeypair = anchor.web3.Keypair.generate();
-          const [marketPda, marketBump] =
-            anchor.web3.PublicKey.findProgramAddressSync(
-              [
-                Buffer.from("market"),
-                Buffer.from(symbol),
-                config.configPda.toBuffer(),
-              ],
-              program.programId
-            );
-          const [nativeVaultPda, nativeVaultBump] =
-            anchor.web3.PublicKey.findProgramAddressSync(
-              [
-                Buffer.from("market_vault"),
-                Buffer.from(symbol),
-                config.configPda.toBuffer(),
-              ],
-              program.programId
-            );
+          const [marketPda, marketBump] = anchor.web3.PublicKey.findProgramAddressSync(
+            [Buffer.from("market"), Buffer.from(symbol), config.configPda.toBuffer()],
+            program.programId
+          );
+          const [nativeVaultPda, nativeVaultBump] = anchor.web3.PublicKey.findProgramAddressSync(
+            [Buffer.from("market_vault"), Buffer.from(symbol), config.configPda.toBuffer()],
+            program.programId
+          );
 
           const tokenVaultAta = getAssociatedTokenAddressSync(
             mintKeypair.publicKey,
@@ -213,10 +183,7 @@ describe("burn", () => {
           } catch (e) {
             expect(e instanceof anchor.AnchorError).to.be.true;
             const anchorError = e as anchor.AnchorError;
-            expect(anchorError.error.errorCode.code).to.be.oneOf([
-              "InvalidSymbol",
-              "InvalidSymbolLength",
-            ]);
+            expect(anchorError.error.errorCode.code).to.be.oneOf(["InvalidSymbol", "InvalidSymbolLength"]);
           }
         });
       });
@@ -229,24 +196,14 @@ describe("burn", () => {
         symbol: "TS" + nextSymbolIndex++,
         uri: "https://example.org",
       };
-      const [marketPda, marketBump] =
-        anchor.web3.PublicKey.findProgramAddressSync(
-          [
-            Buffer.from("market"),
-            Buffer.from(args.symbol),
-            config.configPda.toBuffer(),
-          ],
-          program.programId
-        );
-      const [nativeVaultPda, nativeVaultBump] =
-        anchor.web3.PublicKey.findProgramAddressSync(
-          [
-            Buffer.from("market_vault"),
-            Buffer.from(args.symbol + "OTHER"),
-            config.configPda.toBuffer(),
-          ],
-          program.programId
-        );
+      const [marketPda, marketBump] = anchor.web3.PublicKey.findProgramAddressSync(
+        [Buffer.from("market"), Buffer.from(args.symbol), config.configPda.toBuffer()],
+        program.programId
+      );
+      const [nativeVaultPda, nativeVaultBump] = anchor.web3.PublicKey.findProgramAddressSync(
+        [Buffer.from("market_vault"), Buffer.from(args.symbol + "OTHER"), config.configPda.toBuffer()],
+        program.programId
+      );
       const tokenVaultAta = getAssociatedTokenAddressSync(
         mintKeypair.publicKey,
         marketPda,
@@ -269,9 +226,7 @@ describe("burn", () => {
       } catch (e) {
         expect(e instanceof anchor.AnchorError).to.be.true;
         const anchorError = e as anchor.AnchorError;
-        expect(anchorError.error.errorCode.code).to.be.eq(
-          "NativeVaultAccountMismatch"
-        );
+        expect(anchorError.error.errorCode.code).to.be.eq("NativeVaultAccountMismatch");
       }
     });
 
@@ -282,24 +237,14 @@ describe("burn", () => {
         symbol: "TS" + nextSymbolIndex++,
         uri: "https://example.org",
       };
-      const [marketPda, marketBump] =
-        anchor.web3.PublicKey.findProgramAddressSync(
-          [
-            Buffer.from("market"),
-            Buffer.from(args.symbol),
-            config.configPda.toBuffer(),
-          ],
-          program.programId
-        );
-      const [nativeVaultPda, nativeVaultBump] =
-        anchor.web3.PublicKey.findProgramAddressSync(
-          [
-            Buffer.from("market_vault"),
-            Buffer.from(args.symbol),
-            config.configPda.toBuffer(),
-          ],
-          program.programId
-        );
+      const [marketPda, marketBump] = anchor.web3.PublicKey.findProgramAddressSync(
+        [Buffer.from("market"), Buffer.from(args.symbol), config.configPda.toBuffer()],
+        program.programId
+      );
+      const [nativeVaultPda, nativeVaultBump] = anchor.web3.PublicKey.findProgramAddressSync(
+        [Buffer.from("market_vault"), Buffer.from(args.symbol), config.configPda.toBuffer()],
+        program.programId
+      );
       const tokenVaultAta = getAssociatedTokenAddressSync(
         mintKeypair.publicKey,
         marketPda,
@@ -328,9 +273,7 @@ describe("burn", () => {
 
       const market = await program.account.market.fetch(marketPda);
       expect(market.config.toBase58()).to.eq(config.configPda.toBase58());
-      expect(market.tokenMint.toBase58()).to.eq(
-        mintKeypair.publicKey.toBase58()
-      );
+      expect(market.tokenMint.toBase58()).to.eq(mintKeypair.publicKey.toBase58());
       expect(market.tokenVault.toBase58()).to.eq(tokenVaultAta.toBase58());
       expect(market.nativeVault.toBase58()).to.eq(nativeVaultPda.toBase58());
       expect(market.symbol).to.eq(args.symbol);
@@ -357,9 +300,7 @@ describe("burn", () => {
       const state = getMetadataPointerState(mint);
       expect(state.metadataAddress).to.not.null;
       expect(state.authority!.toBase58()).to.eq(marketPda.toBase58());
-      expect(state.metadataAddress!.toBase58()).to.eq(
-        mintKeypair.publicKey.toBase58()
-      );
+      expect(state.metadataAddress!.toBase58()).to.eq(mintKeypair.publicKey.toBase58());
 
       const metadata = await getTokenMetadata(
         program.provider.connection,
@@ -379,24 +320,14 @@ describe("burn", () => {
       [" ", "abc 123", "abc", "ABC ", "ABC 123"].forEach((symbol) => {
         it(`invalid symbol: ${symbol}`, async () => {
           const mintKeypair = anchor.web3.Keypair.generate();
-          const [marketPda, marketBump] =
-            anchor.web3.PublicKey.findProgramAddressSync(
-              [
-                Buffer.from("market"),
-                Buffer.from(symbol),
-                config.configPda.toBuffer(),
-              ],
-              program.programId
-            );
-          const [nativeVaultPda, nativeVaultBump] =
-            anchor.web3.PublicKey.findProgramAddressSync(
-              [
-                Buffer.from("market_vault"),
-                Buffer.from(symbol),
-                config.configPda.toBuffer(),
-              ],
-              program.programId
-            );
+          const [marketPda, marketBump] = anchor.web3.PublicKey.findProgramAddressSync(
+            [Buffer.from("market"), Buffer.from(symbol), config.configPda.toBuffer()],
+            program.programId
+          );
+          const [nativeVaultPda, nativeVaultBump] = anchor.web3.PublicKey.findProgramAddressSync(
+            [Buffer.from("market_vault"), Buffer.from(symbol), config.configPda.toBuffer()],
+            program.programId
+          );
 
           const tokenVaultAta = getAssociatedTokenAddressSync(
             mintKeypair.publicKey,
@@ -426,10 +357,7 @@ describe("burn", () => {
             expect(e instanceof anchor.AnchorError).to.be.true;
             const anchorError = e as anchor.AnchorError;
             const number = anchorError.error.errorCode.number;
-            expect(anchorError.error.errorCode.code).to.be.oneOf([
-              "InvalidSymbol",
-              "InvalidSymbolLength",
-            ]);
+            expect(anchorError.error.errorCode.code).to.be.oneOf(["InvalidSymbol", "InvalidSymbolLength"]);
           }
         });
       });
@@ -442,24 +370,14 @@ describe("burn", () => {
         symbol: "TS" + nextSymbolIndex++,
         uri: "https://example.org",
       };
-      const [marketPda, marketBump] =
-        anchor.web3.PublicKey.findProgramAddressSync(
-          [
-            Buffer.from("market"),
-            Buffer.from(args.symbol),
-            config.configPda.toBuffer(),
-          ],
-          program.programId
-        );
-      const [nativeVaultPda, nativeVaultBump] =
-        anchor.web3.PublicKey.findProgramAddressSync(
-          [
-            Buffer.from("market_vault"),
-            Buffer.from(args.symbol + "OTHER"),
-            config.configPda.toBuffer(),
-          ],
-          program.programId
-        );
+      const [marketPda, marketBump] = anchor.web3.PublicKey.findProgramAddressSync(
+        [Buffer.from("market"), Buffer.from(args.symbol), config.configPda.toBuffer()],
+        program.programId
+      );
+      const [nativeVaultPda, nativeVaultBump] = anchor.web3.PublicKey.findProgramAddressSync(
+        [Buffer.from("market_vault"), Buffer.from(args.symbol + "OTHER"), config.configPda.toBuffer()],
+        program.programId
+      );
       const tokenVaultAta = getAssociatedTokenAddressSync(
         mintKeypair.publicKey,
         marketPda,
@@ -482,9 +400,7 @@ describe("burn", () => {
       } catch (e) {
         expect(e instanceof anchor.AnchorError).to.be.true;
         const anchorError = e as anchor.AnchorError;
-        expect(anchorError.error.errorCode.code).to.be.eq(
-          "NativeVaultAccountMismatch"
-        );
+        expect(anchorError.error.errorCode.code).to.be.eq("NativeVaultAccountMismatch");
       }
     });
 
@@ -495,24 +411,14 @@ describe("burn", () => {
         symbol: "TS" + nextSymbolIndex++,
         uri: "https://example.org",
       };
-      const [marketPda, marketBump] =
-        anchor.web3.PublicKey.findProgramAddressSync(
-          [
-            Buffer.from("market"),
-            Buffer.from(args.symbol),
-            config.configPda.toBuffer(),
-          ],
-          program.programId
-        );
-      const [nativeVaultPda, nativeVaultBump] =
-        anchor.web3.PublicKey.findProgramAddressSync(
-          [
-            Buffer.from("market_vault"),
-            Buffer.from(args.symbol),
-            config.configPda.toBuffer(),
-          ],
-          program.programId
-        );
+      const [marketPda, marketBump] = anchor.web3.PublicKey.findProgramAddressSync(
+        [Buffer.from("market"), Buffer.from(args.symbol), config.configPda.toBuffer()],
+        program.programId
+      );
+      const [nativeVaultPda, nativeVaultBump] = anchor.web3.PublicKey.findProgramAddressSync(
+        [Buffer.from("market_vault"), Buffer.from(args.symbol), config.configPda.toBuffer()],
+        program.programId
+      );
       const tokenVaultAta = getAssociatedTokenAddressSync(
         mintKeypair.publicKey,
         marketPda,
@@ -541,9 +447,7 @@ describe("burn", () => {
 
       const market = await program.account.market.fetch(marketPda);
       expect(market.config.toBase58()).to.eq(config.configPda.toBase58());
-      expect(market.tokenMint.toBase58()).to.eq(
-        mintKeypair.publicKey.toBase58()
-      );
+      expect(market.tokenMint.toBase58()).to.eq(mintKeypair.publicKey.toBase58());
       expect(market.tokenVault.toBase58()).to.eq(tokenVaultAta.toBase58());
       expect(market.nativeVault.toBase58()).to.eq(nativeVaultPda.toBase58());
       expect(market.symbol).to.eq(args.symbol);
@@ -570,9 +474,7 @@ describe("burn", () => {
       const state = getMetadataPointerState(mint);
       expect(state.metadataAddress).to.not.null;
       expect(state.authority!.toBase58()).to.eq(marketPda.toBase58());
-      expect(state.metadataAddress!.toBase58()).to.eq(
-        mintKeypair.publicKey.toBase58()
-      );
+      expect(state.metadataAddress!.toBase58()).to.eq(mintKeypair.publicKey.toBase58());
 
       const metadata = await getTokenMetadata(
         program.provider.connection,
@@ -589,13 +491,9 @@ describe("burn", () => {
 
   describe("#buy_token", () => {
     it("should failed if native vault account mismatch", async () => {
-      const {
-        mintKeypair,
-        marketPda,
-        marketBump,
-        tokenVaultAta,
-        extraAccountMetaListPda,
-      } = await initializeMarket(config.configPda);
+      const { mintKeypair, marketPda, marketBump, tokenVaultAta, extraAccountMetaListPda } = await initializeMarket(
+        config.configPda
+      );
 
       const tokenRecipient = await getOrCreateAssociatedTokenAccount(
         anchor.getProvider().connection,
@@ -627,20 +525,14 @@ describe("burn", () => {
       } catch (e) {
         expect(e instanceof anchor.AnchorError).to.be.true;
         const anchorError = e as anchor.AnchorError;
-        expect(anchorError.error.errorCode.code).to.be.eq(
-          "NativeVaultAccountMismatch"
-        );
+        expect(anchorError.error.errorCode.code).to.be.eq("NativeVaultAccountMismatch");
       }
     });
 
     it("should failed if token recipient account mismatch", async () => {
-      const {
-        marketPda,
-        marketBump,
-        tokenVaultAta,
-        nativeVaultPda,
-        extraAccountMetaListPda,
-      } = await initializeMarket(config.configPda);
+      const { marketPda, marketBump, tokenVaultAta, nativeVaultPda, extraAccountMetaListPda } = await initializeMarket(
+        config.configPda
+      );
       const { mintKeypair: mintKeypairOther } = await initializeMarket(
         config.configPda,
         undefined,
@@ -678,20 +570,14 @@ describe("burn", () => {
       } catch (e) {
         expect(e instanceof anchor.AnchorError).to.be.true;
         const anchorError = e as anchor.AnchorError;
-        expect(anchorError.error.errorCode.code).to.be.eq(
-          "TokenMintAccountMismatch"
-        );
+        expect(anchorError.error.errorCode.code).to.be.eq("TokenMintAccountMismatch");
       }
     });
 
     it("should failed if fee recipient account mismatch", async () => {
-      const {
-        mintKeypair,
-        marketPda,
-        tokenVaultAta,
-        nativeVaultPda,
-        extraAccountMetaListPda,
-      } = await initializeMarket(config.configPda);
+      const { mintKeypair, marketPda, tokenVaultAta, nativeVaultPda, extraAccountMetaListPda } = await initializeMarket(
+        config.configPda
+      );
 
       const tokenRecipient = await getOrCreateAssociatedTokenAccount(
         anchor.getProvider().connection,
@@ -723,20 +609,14 @@ describe("burn", () => {
       } catch (e) {
         expect(e instanceof anchor.AnchorError).to.be.true;
         const anchorError = e as anchor.AnchorError;
-        expect(anchorError.error.errorCode.code).to.be.eq(
-          "FeeRecipientMismatch"
-        );
+        expect(anchorError.error.errorCode.code).to.be.eq("FeeRecipientMismatch");
       }
     });
 
     it("should failed if token vault account mismatch", async () => {
-      const {
-        mintKeypair,
-        marketPda,
-        tokenVaultAta,
-        nativeVaultPda,
-        extraAccountMetaListPda,
-      } = await initializeMarket(config.configPda);
+      const { mintKeypair, marketPda, tokenVaultAta, nativeVaultPda, extraAccountMetaListPda } = await initializeMarket(
+        config.configPda
+      );
       const { tokenVaultAta: tokenVaultAtaOther } = await initializeMarket(
         config.configPda,
         undefined,
@@ -774,20 +654,14 @@ describe("burn", () => {
       } catch (e) {
         expect(e instanceof anchor.AnchorError).to.be.true;
         const anchorError = e as anchor.AnchorError;
-        expect(anchorError.error.errorCode.code).to.be.eq(
-          "TokenVaultAccountMismatch"
-        );
+        expect(anchorError.error.errorCode.code).to.be.eq("TokenVaultAccountMismatch");
       }
     });
 
     it("should failed if buy amount greater than remaining supply", async () => {
-      const {
-        mintKeypair,
-        marketPda,
-        tokenVaultAta,
-        nativeVaultPda,
-        extraAccountMetaListPda,
-      } = await initializeMarket(config.configPda);
+      const { mintKeypair, marketPda, tokenVaultAta, nativeVaultPda, extraAccountMetaListPda } = await initializeMarket(
+        config.configPda
+      );
       const tokenRecipient = await getOrCreateAssociatedTokenAccount(
         anchor.getProvider().connection,
         wallet,
@@ -802,9 +676,7 @@ describe("burn", () => {
       try {
         await program.methods
           .buyToken({
-            buyAmount: new anchor.BN(
-              new anchor.BN(MAX_TOKEN_SUPPLY.toString()).add(new anchor.BN(1))
-            ),
+            buyAmount: new anchor.BN(new anchor.BN(MAX_TOKEN_SUPPLY.toString()).add(new anchor.BN(1))),
             maxPay: new anchor.BN(0),
           })
           .accountsPartial({
@@ -826,19 +698,13 @@ describe("burn", () => {
 
     it("should failed if pay amount exceeds max pay", async () => {
       const { configPda, feeRecipientKeypair } = await initializeConfig();
-      const {
-        mintKeypair,
-        marketPda,
-        tokenVaultAta,
-        nativeVaultPda,
-        extraAccountMetaListPda,
-      } = await initializeMarket(configPda);
+      const { mintKeypair, marketPda, tokenVaultAta, nativeVaultPda, extraAccountMetaListPda } = await initializeMarket(
+        configPda
+      );
 
       const payer = anchor.web3.Keypair.generate();
       const payerBalanceBefore = 1e9 * 10e4;
-      const tx = await anchor
-        .getProvider()
-        .connection.requestAirdrop(payer.publicKey, payerBalanceBefore);
+      const tx = await anchor.getProvider().connection.requestAirdrop(payer.publicKey, payerBalanceBefore);
       await confirmTransaction(tx);
 
       const tokenRecipient = getAssociatedTokenAddressSync(
@@ -854,11 +720,7 @@ describe("burn", () => {
         mintKeypair.publicKey,
         TOKEN_2022_PROGRAM_ID
       );
-      const { y, fee, total } = compute_swap_with_fee(
-        BigInt(1e9),
-        MAX_TOKEN_SUPPLY,
-        true
-      );
+      const { y, fee, total } = compute_swap_with_fee(BigInt(1e9), MAX_TOKEN_SUPPLY, true);
       const ix1 = await program.methods
         .buyToken({
           buyAmount: new anchor.BN(1e9),
@@ -883,26 +745,19 @@ describe("burn", () => {
       } catch (err) {
         expect(err instanceof anchor.web3.SendTransactionError).to.be.true;
         const sendTxError = err as anchor.web3.SendTransactionError;
-        expect(sendTxError.message.includes("PayAmountExceedsMaxPay")).to.be
-          .true;
+        expect(sendTxError.message.includes("PayAmountExceedsMaxPay")).to.be.true;
       }
     });
 
     it("should failed if payer balance insufficient", async () => {
       const { configPda, feeRecipientKeypair } = await initializeConfig();
-      const {
-        mintKeypair,
-        marketPda,
-        tokenVaultAta,
-        nativeVaultPda,
-        extraAccountMetaListPda,
-      } = await initializeMarket(configPda);
+      const { mintKeypair, marketPda, tokenVaultAta, nativeVaultPda, extraAccountMetaListPda } = await initializeMarket(
+        configPda
+      );
 
       const payer = anchor.web3.Keypair.generate();
       const payerBalanceBefore = 1e9;
-      const tx = await anchor
-        .getProvider()
-        .connection.requestAirdrop(payer.publicKey, payerBalanceBefore);
+      const tx = await anchor.getProvider().connection.requestAirdrop(payer.publicKey, payerBalanceBefore);
       await confirmTransaction(tx);
 
       const tokenRecipient = getAssociatedTokenAddressSync(
@@ -918,11 +773,7 @@ describe("burn", () => {
         mintKeypair.publicKey,
         TOKEN_2022_PROGRAM_ID
       );
-      const { y, fee, total } = compute_swap_with_fee(
-        MAX_TOKEN_SUPPLY / BigInt(10),
-        MAX_TOKEN_SUPPLY,
-        true
-      );
+      const { y, fee, total } = compute_swap_with_fee(MAX_TOKEN_SUPPLY / BigInt(10), MAX_TOKEN_SUPPLY, true);
       const ix1 = await program.methods
         .buyToken({
           buyAmount: new anchor.BN((MAX_TOKEN_SUPPLY / BigInt(10)).toString()),
@@ -947,26 +798,17 @@ describe("burn", () => {
       } catch (err) {
         expect(err instanceof anchor.web3.SendTransactionError);
         const sendTxError = err as anchor.web3.SendTransactionError;
-        expect(sendTxError.logs.join(" ").includes("insufficient lamports")).to
-          .be.true;
+        expect(sendTxError.logs.join(" ").includes("insufficient lamports")).to.be.true;
       }
     });
 
     it("should failed if symbol is `BURN`", async () => {
       const { configPda, feeRecipientKeypair } = await initializeConfig();
-      const {
-        mintKeypair,
-        marketPda,
-        tokenVaultAta,
-        nativeVaultPda,
-        extraAccountMetaListPda,
-      } = burn;
+      const { mintKeypair, marketPda, tokenVaultAta, nativeVaultPda, extraAccountMetaListPda } = burn;
 
       const payer = anchor.web3.Keypair.generate();
       const payerBalanceBefore = 1e9;
-      const tx = await anchor
-        .getProvider()
-        .connection.requestAirdrop(payer.publicKey, payerBalanceBefore);
+      const tx = await anchor.getProvider().connection.requestAirdrop(payer.publicKey, payerBalanceBefore);
       await confirmTransaction(tx);
 
       const tokenRecipient = getAssociatedTokenAddressSync(
@@ -982,11 +824,7 @@ describe("burn", () => {
         mintKeypair.publicKey,
         TOKEN_2022_PROGRAM_ID
       );
-      const { y, fee, total } = compute_swap_with_fee(
-        MAX_TOKEN_SUPPLY / BigInt(10),
-        MAX_TOKEN_SUPPLY,
-        true
-      );
+      const { y, fee, total } = compute_swap_with_fee(MAX_TOKEN_SUPPLY / BigInt(10), MAX_TOKEN_SUPPLY, true);
       const ix1 = await program.methods
         .buyToken({
           buyAmount: new anchor.BN((MAX_TOKEN_SUPPLY / BigInt(10)).toString()),
@@ -1011,39 +849,26 @@ describe("burn", () => {
       } catch (err) {
         expect(err instanceof anchor.web3.SendTransactionError).to.be.true;
         const sendTxError = err as anchor.web3.SendTransactionError;
-        expect(sendTxError.message.includes("CannotUseThisInstruction")).to.be
-          .true;
+        expect(sendTxError.message.includes("CannotUseThisInstruction")).to.be.true;
       }
     });
 
     it("should succeed", async () => {
       const { configPda, feeRecipientKeypair } = await initializeConfig();
-      const {
-        mintKeypair,
-        marketPda,
-        tokenVaultAta,
-        nativeVaultPda,
-        extraAccountMetaListPda,
-      } = await initializeMarket(configPda);
+      const { mintKeypair, marketPda, tokenVaultAta, nativeVaultPda, extraAccountMetaListPda } = await initializeMarket(
+        configPda
+      );
 
       const payer = anchor.web3.Keypair.generate();
       const payerBalanceBefore = 1e9 * 100;
-      let tx = await anchor
-        .getProvider()
-        .connection.requestAirdrop(payer.publicKey, payerBalanceBefore);
+      let tx = await anchor.getProvider().connection.requestAirdrop(payer.publicKey, payerBalanceBefore);
       await confirmTransaction(tx);
 
-      tx = await anchor
-        .getProvider()
-        .connection.requestAirdrop(feeRecipientKeypair.publicKey, 1e9);
+      tx = await anchor.getProvider().connection.requestAirdrop(feeRecipientKeypair.publicKey, 1e9);
       await confirmTransaction(tx);
 
-      const nativeVaultBalanceBefore = await anchor
-        .getProvider()
-        .connection.getBalance(nativeVaultPda);
-      const feeRecipientBalanceBefore = await anchor
-        .getProvider()
-        .connection.getBalance(feeRecipientKeypair.publicKey);
+      const nativeVaultBalanceBefore = await anchor.getProvider().connection.getBalance(nativeVaultPda);
+      const feeRecipientBalanceBefore = await anchor.getProvider().connection.getBalance(feeRecipientKeypair.publicKey);
 
       const tokenRecipient = getAssociatedTokenAddressSync(
         mintKeypair.publicKey,
@@ -1059,11 +884,7 @@ describe("burn", () => {
         TOKEN_2022_PROGRAM_ID
       );
 
-      const { y, fee, total } = compute_swap_with_fee(
-        BigInt(1e9),
-        MAX_TOKEN_SUPPLY,
-        true
-      );
+      const { y, fee, total } = compute_swap_with_fee(BigInt(1e9), MAX_TOKEN_SUPPLY, true);
       const ix1 = await program.methods
         .buyToken({
           buyAmount: new anchor.BN(1e9),
@@ -1103,21 +924,11 @@ describe("burn", () => {
       buyTx.feePayer = wallet.publicKey;
       await sendAndConfirmTransaction(buyTx, wallet, payer);
 
-      const nativeVaultBalanceAfter = await anchor
-        .getProvider()
-        .connection.getBalance(nativeVaultPda);
-      const feeRecipientBalanceAfter = await anchor
-        .getProvider()
-        .connection.getBalance(feeRecipientKeypair.publicKey);
-      expect(feeRecipientBalanceAfter - feeRecipientBalanceBefore).to.eq(
-        Number(fee)
-      );
-      expect(nativeVaultBalanceAfter - nativeVaultBalanceBefore).to.eq(
-        Number(y)
-      );
-      const payerBalanceAfter = await anchor
-        .getProvider()
-        .connection.getBalance(payer.publicKey);
+      const nativeVaultBalanceAfter = await anchor.getProvider().connection.getBalance(nativeVaultPda);
+      const feeRecipientBalanceAfter = await anchor.getProvider().connection.getBalance(feeRecipientKeypair.publicKey);
+      expect(feeRecipientBalanceAfter - feeRecipientBalanceBefore).to.eq(Number(fee));
+      expect(nativeVaultBalanceAfter - nativeVaultBalanceBefore).to.eq(Number(y));
+      const payerBalanceAfter = await anchor.getProvider().connection.getBalance(payer.publicKey);
       expect(payerBalanceBefore - payerBalanceAfter).to.eq(Number(total));
 
       const tokenRecipientBalanceAfter = await getAccount(
@@ -1134,9 +945,7 @@ describe("burn", () => {
         undefined,
         TOKEN_2022_PROGRAM_ID
       );
-      expect(tokenVaultBalanceAfter.amount + BigInt(1e9)).to.eq(
-        MAX_TOKEN_SUPPLY
-      );
+      expect(tokenVaultBalanceAfter.amount + BigInt(1e9)).to.eq(MAX_TOKEN_SUPPLY);
 
       const { remainingSupply } = await program.account.market.fetch(marketPda);
       expect(remainingSupply.toNumber() + 1e9).to.eq(Number(MAX_TOKEN_SUPPLY));
@@ -1146,13 +955,9 @@ describe("burn", () => {
   describe("#buy_token_exact_in", () => {
     it("should failed if native vault account mismatch", async () => {
       const { configPda, feeRecipientKeypair } = await initializeConfig();
-      const {
-        mintKeypair,
-        marketPda,
-        marketBump,
-        tokenVaultAta,
-        extraAccountMetaListPda,
-      } = await initializeMarket(configPda);
+      const { mintKeypair, marketPda, marketBump, tokenVaultAta, extraAccountMetaListPda } = await initializeMarket(
+        configPda
+      );
 
       const tokenRecipient = await getOrCreateAssociatedTokenAccount(
         anchor.getProvider().connection,
@@ -1184,21 +989,15 @@ describe("burn", () => {
       } catch (e) {
         expect(e instanceof anchor.AnchorError).to.be.true;
         const anchorError = e as anchor.AnchorError;
-        expect(anchorError.error.errorCode.code).to.be.eq(
-          "NativeVaultAccountMismatch"
-        );
+        expect(anchorError.error.errorCode.code).to.be.eq("NativeVaultAccountMismatch");
       }
     });
 
     it("should failed if token recipient account mismatch", async () => {
       const { configPda, feeRecipientKeypair } = await initializeConfig();
-      const {
-        marketPda,
-        marketBump,
-        tokenVaultAta,
-        nativeVaultPda,
-        extraAccountMetaListPda,
-      } = await initializeMarket(configPda);
+      const { marketPda, marketBump, tokenVaultAta, nativeVaultPda, extraAccountMetaListPda } = await initializeMarket(
+        configPda
+      );
       const { mintKeypair: mintKeypairOther } = await initializeMarket(
         configPda,
         undefined,
@@ -1236,20 +1035,14 @@ describe("burn", () => {
       } catch (e) {
         expect(e instanceof anchor.AnchorError).to.be.true;
         const anchorError = e as anchor.AnchorError;
-        expect(anchorError.error.errorCode.code).to.be.eq(
-          "TokenMintAccountMismatch"
-        );
+        expect(anchorError.error.errorCode.code).to.be.eq("TokenMintAccountMismatch");
       }
     });
 
     it("should failed if fee recipient account mismatch", async () => {
-      const {
-        mintKeypair,
-        marketPda,
-        tokenVaultAta,
-        nativeVaultPda,
-        extraAccountMetaListPda,
-      } = await initializeMarket(config.configPda);
+      const { mintKeypair, marketPda, tokenVaultAta, nativeVaultPda, extraAccountMetaListPda } = await initializeMarket(
+        config.configPda
+      );
 
       const tokenRecipient = await getOrCreateAssociatedTokenAccount(
         anchor.getProvider().connection,
@@ -1281,21 +1074,15 @@ describe("burn", () => {
       } catch (e) {
         expect(e instanceof anchor.AnchorError).to.be.true;
         const anchorError = e as anchor.AnchorError;
-        expect(anchorError.error.errorCode.code).to.be.eq(
-          "FeeRecipientMismatch"
-        );
+        expect(anchorError.error.errorCode.code).to.be.eq("FeeRecipientMismatch");
       }
     });
 
     it("should failed if token vault account mismatch", async () => {
       const { configPda, feeRecipientKeypair } = await initializeConfig();
-      const {
-        mintKeypair,
-        marketPda,
-        tokenVaultAta,
-        nativeVaultPda,
-        extraAccountMetaListPda,
-      } = await initializeMarket(configPda);
+      const { mintKeypair, marketPda, tokenVaultAta, nativeVaultPda, extraAccountMetaListPda } = await initializeMarket(
+        configPda
+      );
       const { tokenVaultAta: tokenVaultAtaOther } = await initializeMarket(
         configPda,
         undefined,
@@ -1333,21 +1120,15 @@ describe("burn", () => {
       } catch (e) {
         expect(e instanceof anchor.AnchorError).to.be.true;
         const anchorError = e as anchor.AnchorError;
-        expect(anchorError.error.errorCode.code).to.be.eq(
-          "TokenVaultAccountMismatch"
-        );
+        expect(anchorError.error.errorCode.code).to.be.eq("TokenVaultAccountMismatch");
       }
     });
 
     it("should failed if pay amount is zero", async () => {
       const { configPda, feeRecipientKeypair } = await initializeConfig();
-      const {
-        mintKeypair,
-        marketPda,
-        tokenVaultAta,
-        nativeVaultPda,
-        extraAccountMetaListPda,
-      } = await initializeMarket(configPda);
+      const { mintKeypair, marketPda, tokenVaultAta, nativeVaultPda, extraAccountMetaListPda } = await initializeMarket(
+        configPda
+      );
 
       const tokenRecipient = await getOrCreateAssociatedTokenAccount(
         anchor.getProvider().connection,
@@ -1385,19 +1166,13 @@ describe("burn", () => {
 
     it("should failed if receive too small", async () => {
       const { configPda, feeRecipientKeypair } = await initializeConfig();
-      const {
-        mintKeypair,
-        marketPda,
-        tokenVaultAta,
-        nativeVaultPda,
-        extraAccountMetaListPda,
-      } = await initializeMarket(configPda);
+      const { mintKeypair, marketPda, tokenVaultAta, nativeVaultPda, extraAccountMetaListPda } = await initializeMarket(
+        configPda
+      );
 
       const payer = anchor.web3.Keypair.generate();
       const payerBalanceBefore = 1e9 * 10e4;
-      const tx = await anchor
-        .getProvider()
-        .connection.requestAirdrop(payer.publicKey, payerBalanceBefore);
+      const tx = await anchor.getProvider().connection.requestAirdrop(payer.publicKey, payerBalanceBefore);
       await confirmTransaction(tx);
 
       const tokenRecipient = getAssociatedTokenAddressSync(
@@ -1413,10 +1188,7 @@ describe("burn", () => {
         mintKeypair.publicKey,
         TOKEN_2022_PROGRAM_ID
       );
-      const { buy_amount, y, fee, total } = compute_buy_token_exact_in_with_fee(
-        BigInt(1e9),
-        MAX_TOKEN_SUPPLY
-      );
+      const { buy_amount, y, fee, total } = compute_buy_token_exact_in_with_fee(BigInt(1e9), MAX_TOKEN_SUPPLY);
       const ix1 = await program.methods
         .buyTokenExactIn({
           payAmount: new anchor.BN(1e9),
@@ -1447,19 +1219,13 @@ describe("burn", () => {
 
     it("should failed if payer balance not enough", async () => {
       const { configPda, feeRecipientKeypair } = await initializeConfig();
-      const {
-        mintKeypair,
-        marketPda,
-        tokenVaultAta,
-        nativeVaultPda,
-        extraAccountMetaListPda,
-      } = await initializeMarket(configPda);
+      const { mintKeypair, marketPda, tokenVaultAta, nativeVaultPda, extraAccountMetaListPda } = await initializeMarket(
+        configPda
+      );
 
       const payer = anchor.web3.Keypair.generate();
       const payerBalanceBefore = 1e8;
-      const tx = await anchor
-        .getProvider()
-        .connection.requestAirdrop(payer.publicKey, payerBalanceBefore);
+      const tx = await anchor.getProvider().connection.requestAirdrop(payer.publicKey, payerBalanceBefore);
       await confirmTransaction(tx);
 
       const tokenRecipient = getAssociatedTokenAddressSync(
@@ -1475,10 +1241,7 @@ describe("burn", () => {
         mintKeypair.publicKey,
         TOKEN_2022_PROGRAM_ID
       );
-      const { buy_amount, y, fee, total } = compute_buy_token_exact_in_with_fee(
-        BigInt(1e9),
-        MAX_TOKEN_SUPPLY
-      );
+      const { buy_amount, y, fee, total } = compute_buy_token_exact_in_with_fee(BigInt(1e9), MAX_TOKEN_SUPPLY);
       const ix1 = await program.methods
         .buyTokenExactIn({
           payAmount: new anchor.BN(1e9),
@@ -1503,26 +1266,17 @@ describe("burn", () => {
       } catch (err) {
         expect(err instanceof anchor.web3.SendTransactionError).to.be.true;
         let sterr = err as anchor.web3.SendTransactionError;
-        expect(sterr.logs.some((log) => log.includes("insufficient lamports")))
-          .to.be.true;
+        expect(sterr.logs.some((log) => log.includes("insufficient lamports"))).to.be.true;
       }
     });
 
     it("should failed if symbol is `BURN`", async () => {
       const { configPda, feeRecipientKeypair } = await initializeConfig();
-      const {
-        mintKeypair,
-        marketPda,
-        tokenVaultAta,
-        nativeVaultPda,
-        extraAccountMetaListPda,
-      } = burn;
+      const { mintKeypair, marketPda, tokenVaultAta, nativeVaultPda, extraAccountMetaListPda } = burn;
 
       const payer = anchor.web3.Keypair.generate();
       const payerBalanceBefore = 1e8;
-      const tx = await anchor
-        .getProvider()
-        .connection.requestAirdrop(payer.publicKey, payerBalanceBefore);
+      const tx = await anchor.getProvider().connection.requestAirdrop(payer.publicKey, payerBalanceBefore);
       await confirmTransaction(tx);
 
       const tokenRecipient = getAssociatedTokenAddressSync(
@@ -1538,10 +1292,7 @@ describe("burn", () => {
         mintKeypair.publicKey,
         TOKEN_2022_PROGRAM_ID
       );
-      const { buy_amount, y, fee, total } = compute_buy_token_exact_in_with_fee(
-        BigInt(1e9),
-        MAX_TOKEN_SUPPLY
-      );
+      const { buy_amount, y, fee, total } = compute_buy_token_exact_in_with_fee(BigInt(1e9), MAX_TOKEN_SUPPLY);
       const ix1 = await program.methods
         .buyTokenExactIn({
           payAmount: new anchor.BN(1e9),
@@ -1566,34 +1317,23 @@ describe("burn", () => {
       } catch (err) {
         expect(err instanceof anchor.web3.SendTransactionError).to.be.true;
         const sendTxError = err as anchor.web3.SendTransactionError;
-        expect(sendTxError.message.includes("CannotUseThisInstruction")).to.be
-          .true;
+        expect(sendTxError.message.includes("CannotUseThisInstruction")).to.be.true;
       }
     });
 
     it("should succeed", async () => {
       const { configPda, feeRecipientKeypair } = await initializeConfig();
-      const {
-        mintKeypair,
-        marketPda,
-        tokenVaultAta,
-        nativeVaultPda,
-        extraAccountMetaListPda,
-      } = await initializeMarket(configPda);
+      const { mintKeypair, marketPda, tokenVaultAta, nativeVaultPda, extraAccountMetaListPda } = await initializeMarket(
+        configPda
+      );
 
       const payer = anchor.web3.Keypair.generate();
       const payerBalanceBefore = 1e9 * 10e4;
-      const tx = await anchor
-        .getProvider()
-        .connection.requestAirdrop(payer.publicKey, payerBalanceBefore);
+      const tx = await anchor.getProvider().connection.requestAirdrop(payer.publicKey, payerBalanceBefore);
       await confirmTransaction(tx);
 
-      const nativeVaultBalanceBefore = await anchor
-        .getProvider()
-        .connection.getBalance(nativeVaultPda);
-      const feeRecipientBalanceBefore = await anchor
-        .getProvider()
-        .connection.getBalance(feeRecipientKeypair.publicKey);
+      const nativeVaultBalanceBefore = await anchor.getProvider().connection.getBalance(nativeVaultPda);
+      const feeRecipientBalanceBefore = await anchor.getProvider().connection.getBalance(feeRecipientKeypair.publicKey);
 
       const tokenRecipient = getAssociatedTokenAddressSync(
         mintKeypair.publicKey,
@@ -1608,10 +1348,7 @@ describe("burn", () => {
         mintKeypair.publicKey,
         TOKEN_2022_PROGRAM_ID
       );
-      const { buy_amount, y, fee, total } = compute_buy_token_exact_in_with_fee(
-        BigInt(1e9),
-        MAX_TOKEN_SUPPLY
-      );
+      const { buy_amount, y, fee, total } = compute_buy_token_exact_in_with_fee(BigInt(1e9), MAX_TOKEN_SUPPLY);
       const ix1 = await program.methods
         .buyTokenExactIn({
           payAmount: new anchor.BN(1e9),
@@ -1630,29 +1367,15 @@ describe("burn", () => {
 
       const buyTx = new anchor.web3.Transaction().add(ix0, ix1);
       buyTx.feePayer = wallet.publicKey;
-      const { signature } = await sendAndConfirmTransaction(
-        buyTx,
-        wallet,
-        payer
-      );
+      const { signature } = await sendAndConfirmTransaction(buyTx, wallet, payer);
       // const txs = await anchor.getProvider().connection.getTransaction(signature, { commitment: "confirmed" })!;
       // console.log(`Transaction: ${JSON.stringify(txs, null, 2)}`);
 
-      const nativeVaultBalanceAfter = await anchor
-        .getProvider()
-        .connection.getBalance(nativeVaultPda);
-      const feeRecipientBalanceAfter = await anchor
-        .getProvider()
-        .connection.getBalance(feeRecipientKeypair.publicKey);
-      expect(feeRecipientBalanceAfter - feeRecipientBalanceBefore).to.eq(
-        Number(fee)
-      );
-      expect(nativeVaultBalanceAfter - nativeVaultBalanceBefore).to.eq(
-        Number(y)
-      );
-      const payerBalanceAfter = await anchor
-        .getProvider()
-        .connection.getBalance(payer.publicKey);
+      const nativeVaultBalanceAfter = await anchor.getProvider().connection.getBalance(nativeVaultPda);
+      const feeRecipientBalanceAfter = await anchor.getProvider().connection.getBalance(feeRecipientKeypair.publicKey);
+      expect(feeRecipientBalanceAfter - feeRecipientBalanceBefore).to.eq(Number(fee));
+      expect(nativeVaultBalanceAfter - nativeVaultBalanceBefore).to.eq(Number(y));
+      const payerBalanceAfter = await anchor.getProvider().connection.getBalance(payer.publicKey);
       expect(payerBalanceBefore - payerBalanceAfter).to.eq(Number(total));
 
       const tokenRecipientBalanceAfter = await getAccount(
@@ -1669,36 +1392,24 @@ describe("burn", () => {
         undefined,
         TOKEN_2022_PROGRAM_ID
       );
-      expect(tokenVaultBalanceAfter.amount + buy_amount).to.eq(
-        MAX_TOKEN_SUPPLY
-      );
+      expect(tokenVaultBalanceAfter.amount + buy_amount).to.eq(MAX_TOKEN_SUPPLY);
 
       const { remainingSupply } = await program.account.market.fetch(marketPda);
-      expect(remainingSupply.toNumber() + Number(buy_amount)).to.eq(
-        Number(MAX_TOKEN_SUPPLY)
-      );
+      expect(remainingSupply.toNumber() + Number(buy_amount)).to.eq(Number(MAX_TOKEN_SUPPLY));
     });
 
     it("should incorrect when multiple buy and sell tx", async () => {
       const { configPda, feeRecipientKeypair } = await initializeConfig();
-      const {
-        mintKeypair,
-        marketPda,
-        tokenVaultAta,
-        nativeVaultPda,
-        extraAccountMetaListPda,
-      } = await initializeMarket(configPda);
+      const { mintKeypair, marketPda, tokenVaultAta, nativeVaultPda, extraAccountMetaListPda } = await initializeMarket(
+        configPda
+      );
 
       const payer = anchor.web3.Keypair.generate();
       const payerBalanceBefore = 1e9 * 10e4;
-      const tx = await anchor
-        .getProvider()
-        .connection.requestAirdrop(payer.publicKey, payerBalanceBefore);
+      const tx = await anchor.getProvider().connection.requestAirdrop(payer.publicKey, payerBalanceBefore);
       await confirmTransaction(tx);
 
-      const nativeVaultBalanceBefore = await anchor
-        .getProvider()
-        .connection.getBalance(nativeVaultPda);
+      const nativeVaultBalanceBefore = await anchor.getProvider().connection.getBalance(nativeVaultPda);
 
       const tokenRecipient = getAssociatedTokenAddressSync(
         mintKeypair.publicKey,
@@ -1713,10 +1424,7 @@ describe("burn", () => {
         mintKeypair.publicKey,
         TOKEN_2022_PROGRAM_ID
       );
-      const { buy_amount, y, fee, total } = compute_buy_token_exact_in_with_fee(
-        BigInt(1e9),
-        MAX_TOKEN_SUPPLY
-      );
+      const { buy_amount, y, fee, total } = compute_buy_token_exact_in_with_fee(BigInt(1e9), MAX_TOKEN_SUPPLY);
 
       for (let i = 0; i < 5; i++) {
         const buyTx = new anchor.web3.Transaction();
@@ -1756,16 +1464,10 @@ describe("burn", () => {
           .instruction();
         buyTx.add(buyIx, sellIx);
         buyTx.feePayer = wallet.publicKey;
-        const { signature } = await sendAndConfirmTransaction(
-          buyTx,
-          wallet,
-          payer
-        );
+        const { signature } = await sendAndConfirmTransaction(buyTx, wallet, payer);
       }
 
-      const nativeVaultBalanceAfter = await anchor
-        .getProvider()
-        .connection.getBalance(nativeVaultPda);
+      const nativeVaultBalanceAfter = await anchor.getProvider().connection.getBalance(nativeVaultPda);
       expect(nativeVaultBalanceAfter - nativeVaultBalanceBefore).to.gt(0);
 
       const tokenRecipientBalanceAfter = await getAccount(
@@ -1791,25 +1493,14 @@ describe("burn", () => {
 
   describe("#buy_burn_exact_in", () => {
     it("should failed if token recipient is not black hole", async () => {
-      const { configPda, feeRecipientKeypair, buyBurnAuthorityKeypair } =
-        await initializeConfig();
-      const {
-        mintKeypair,
-        marketPda,
-        tokenVaultAta,
-        nativeVaultPda,
-        extraAccountMetaListPda,
-      } = burn;
+      const { configPda, feeRecipientKeypair, buyBurnAuthorityKeypair } = await initializeConfig();
+      const { mintKeypair, marketPda, tokenVaultAta, nativeVaultPda, extraAccountMetaListPda } = burn;
 
       const payer = anchor.web3.Keypair.generate();
       const payerBalanceBefore = 1e9 * 1;
-      let tx = await anchor
-        .getProvider()
-        .connection.requestAirdrop(payer.publicKey, payerBalanceBefore);
+      let tx = await anchor.getProvider().connection.requestAirdrop(payer.publicKey, payerBalanceBefore);
       await confirmTransaction(tx);
-      tx = await anchor
-        .getProvider()
-        .connection.requestAirdrop(feeRecipientKeypair.publicKey, 1e9);
+      tx = await anchor.getProvider().connection.requestAirdrop(feeRecipientKeypair.publicKey, 1e9);
       await confirmTransaction(tx);
 
       const tokenRecipient = getAssociatedTokenAddressSync(
@@ -1847,12 +1538,7 @@ describe("burn", () => {
       const buyTx = new anchor.web3.Transaction().add(ix0, ix1);
       buyTx.feePayer = wallet.publicKey;
       try {
-        await sendAndConfirmTransaction(
-          buyTx,
-          wallet,
-          payer,
-          buyBurnAuthorityKeypair
-        );
+        await sendAndConfirmTransaction(buyTx, wallet, payer, buyBurnAuthorityKeypair);
         expect.fail("should have failed");
       } catch (e) {
         expect(e instanceof anchor.web3.SendTransactionError).to.be.true;
@@ -1865,19 +1551,11 @@ describe("burn", () => {
   describe("#buy_burn", () => {
     it("should failed if authority is not buy burn authority", async () => {
       const { configPda, feeRecipientKeypair } = await initializeConfig();
-      const {
-        mintKeypair,
-        marketPda,
-        tokenVaultAta,
-        nativeVaultPda,
-        extraAccountMetaListPda,
-      } = burn;
+      const { mintKeypair, marketPda, tokenVaultAta, nativeVaultPda, extraAccountMetaListPda } = burn;
 
       const payer = anchor.web3.Keypair.generate();
       const payerBalanceBefore = 1e9;
-      const tx = await anchor
-        .getProvider()
-        .connection.requestAirdrop(payer.publicKey, payerBalanceBefore);
+      const tx = await anchor.getProvider().connection.requestAirdrop(payer.publicKey, payerBalanceBefore);
       await confirmTransaction(tx);
 
       const tokenRecipient = getAssociatedTokenAddressSync(
@@ -1895,11 +1573,7 @@ describe("burn", () => {
       );
 
       const [burnAccountPda] = anchor.web3.PublicKey.findProgramAddressSync(
-        [
-          Buffer.from("burn_account"),
-          payer.publicKey.toBuffer(),
-          configPda.toBuffer(),
-        ],
+        [Buffer.from("burn_account"), payer.publicKey.toBuffer(), configPda.toBuffer()],
         program.programId
       );
       const ix1 = await program.methods
@@ -1911,17 +1585,11 @@ describe("burn", () => {
         })
         .instruction();
 
-      const { y, fee, total } = compute_swap_with_fee(
-        MAX_TOKEN_SUPPLY / BigInt(10),
-        MAX_TOKEN_SUPPLY,
-        true
-      );
+      const { y, fee, total } = compute_swap_with_fee(MAX_TOKEN_SUPPLY / BigInt(10), MAX_TOKEN_SUPPLY, true);
       const ix2 = await program.methods
         .buyBurn({
           nextNonce: 1,
-          nextBuyAmount: new anchor.BN(
-            (MAX_TOKEN_SUPPLY / BigInt(10)).toString()
-          ),
+          nextBuyAmount: new anchor.BN((MAX_TOKEN_SUPPLY / BigInt(10)).toString()),
           maxPay: new anchor.BN(total.toString()),
         })
         .accountsPartial({
@@ -1942,36 +1610,26 @@ describe("burn", () => {
       const buyTx = new anchor.web3.Transaction().add(ix0, ix1, ix2);
       buyTx.feePayer = wallet.publicKey;
       try {
-        await sendAndConfirmTransaction(
-          buyTx,
-          wallet,
-          payer,
-          feeRecipientKeypair
-        );
+        await sendAndConfirmTransaction(buyTx, wallet, payer, feeRecipientKeypair);
         expect.fail("should have failed");
       } catch (err) {
         expect(err instanceof anchor.web3.SendTransactionError).to.be.true;
         const sendTxError = err as anchor.web3.SendTransactionError;
-        expect(sendTxError.message.includes("BuyBurnAuthorityMismatch")).to.be
-          .true;
+        expect(sendTxError.message.includes("BuyBurnAuthorityMismatch")).to.be.true;
       }
     });
     it("should failed if symbol is not `BURN`", async () => {
-      const { configPda, feeRecipientKeypair, buyBurnAuthorityKeypair } =
-        await initializeConfig();
-      const {
-        mintKeypair,
-        marketPda,
-        tokenVaultAta,
-        nativeVaultPda,
-        extraAccountMetaListPda,
-      } = await initializeMarket(configPda, undefined, "BURNN", undefined);
+      const { configPda, feeRecipientKeypair, buyBurnAuthorityKeypair } = await initializeConfig();
+      const { mintKeypair, marketPda, tokenVaultAta, nativeVaultPda, extraAccountMetaListPda } = await initializeMarket(
+        configPda,
+        undefined,
+        "BURNN",
+        undefined
+      );
 
       const payer = anchor.web3.Keypair.generate();
       const payerBalanceBefore = 1e9;
-      const tx = await anchor
-        .getProvider()
-        .connection.requestAirdrop(payer.publicKey, payerBalanceBefore);
+      const tx = await anchor.getProvider().connection.requestAirdrop(payer.publicKey, payerBalanceBefore);
       await confirmTransaction(tx);
 
       const tokenRecipient = getAssociatedTokenAddressSync(
@@ -1989,11 +1647,7 @@ describe("burn", () => {
       );
 
       const [burnAccountPda] = anchor.web3.PublicKey.findProgramAddressSync(
-        [
-          Buffer.from("burn_account"),
-          payer.publicKey.toBuffer(),
-          configPda.toBuffer(),
-        ],
+        [Buffer.from("burn_account"), payer.publicKey.toBuffer(), configPda.toBuffer()],
         program.programId
       );
       const ix1 = await program.methods
@@ -2005,17 +1659,11 @@ describe("burn", () => {
         })
         .instruction();
 
-      const { y, fee, total } = compute_swap_with_fee(
-        MAX_TOKEN_SUPPLY / BigInt(10),
-        MAX_TOKEN_SUPPLY,
-        true
-      );
+      const { y, fee, total } = compute_swap_with_fee(MAX_TOKEN_SUPPLY / BigInt(10), MAX_TOKEN_SUPPLY, true);
       const ix2 = await program.methods
         .buyBurn({
           nextNonce: 1,
-          nextBuyAmount: new anchor.BN(
-            (MAX_TOKEN_SUPPLY / BigInt(10)).toString()
-          ),
+          nextBuyAmount: new anchor.BN((MAX_TOKEN_SUPPLY / BigInt(10)).toString()),
           maxPay: new anchor.BN(total.toString()),
         })
         .accountsPartial({
@@ -2036,12 +1684,7 @@ describe("burn", () => {
       const buyTx = new anchor.web3.Transaction().add(ix0, ix1, ix2);
       buyTx.feePayer = wallet.publicKey;
       try {
-        await sendAndConfirmTransaction(
-          buyTx,
-          wallet,
-          payer,
-          buyBurnAuthorityKeypair
-        );
+        await sendAndConfirmTransaction(buyTx, wallet, payer, buyBurnAuthorityKeypair);
         expect.fail("should have failed");
       } catch (err) {
         expect(err instanceof anchor.web3.SendTransactionError).to.be.true;
@@ -2050,25 +1693,14 @@ describe("burn", () => {
       }
     });
     it("should failed if next nonce is incorrect", async () => {
-      const { configPda, feeRecipientKeypair, buyBurnAuthorityKeypair } =
-        await initializeConfig();
-      const {
-        mintKeypair,
-        marketPda,
-        tokenVaultAta,
-        nativeVaultPda,
-        extraAccountMetaListPda,
-      } = burn;
+      const { configPda, feeRecipientKeypair, buyBurnAuthorityKeypair } = await initializeConfig();
+      const { mintKeypair, marketPda, tokenVaultAta, nativeVaultPda, extraAccountMetaListPda } = burn;
 
       const payer = anchor.web3.Keypair.generate();
       const payerBalanceBefore = 1e9;
-      let tx = await anchor
-        .getProvider()
-        .connection.requestAirdrop(payer.publicKey, payerBalanceBefore);
+      let tx = await anchor.getProvider().connection.requestAirdrop(payer.publicKey, payerBalanceBefore);
       await confirmTransaction(tx);
-      tx = await anchor
-        .getProvider()
-        .connection.requestAirdrop(feeRecipientKeypair.publicKey, 1e9);
+      tx = await anchor.getProvider().connection.requestAirdrop(feeRecipientKeypair.publicKey, 1e9);
       await confirmTransaction(tx);
 
       const tokenRecipient = getAssociatedTokenAddressSync(
@@ -2086,11 +1718,7 @@ describe("burn", () => {
       );
 
       const [burnAccountPda] = anchor.web3.PublicKey.findProgramAddressSync(
-        [
-          Buffer.from("burn_account"),
-          payer.publicKey.toBuffer(),
-          configPda.toBuffer(),
-        ],
+        [Buffer.from("burn_account"), payer.publicKey.toBuffer(), configPda.toBuffer()],
         program.programId
       );
       const ix1 = await program.methods
@@ -2103,11 +1731,7 @@ describe("burn", () => {
         .instruction();
 
       const marketBefore = await program.account.market.fetch(marketPda);
-      const { y, fee, total } = compute_swap_with_fee(
-        1000e6,
-        marketBefore.remainingSupply.toNumber(),
-        true
-      );
+      const { y, fee, total } = compute_swap_with_fee(1000e6, marketBefore.remainingSupply.toNumber(), true);
       const ix2 = await program.methods
         .buyBurn({
           nextNonce: 1,
@@ -2131,23 +1755,13 @@ describe("burn", () => {
 
       const buyTx = new anchor.web3.Transaction().add(ix0, ix1, ix2);
       buyTx.feePayer = wallet.publicKey;
-      await sendAndConfirmTransaction(
-        buyTx,
-        wallet,
-        payer,
-        buyBurnAuthorityKeypair
-      );
+      await sendAndConfirmTransaction(buyTx, wallet, payer, buyBurnAuthorityKeypair);
 
       {
         const buyTx = new anchor.web3.Transaction().add(ix2);
         buyTx.feePayer = wallet.publicKey;
         try {
-          await sendAndConfirmTransaction(
-            buyTx,
-            wallet,
-            payer,
-            buyBurnAuthorityKeypair
-          );
+          await sendAndConfirmTransaction(buyTx, wallet, payer, buyBurnAuthorityKeypair);
           expect.fail("should have failed");
         } catch (err) {
           expect(err instanceof anchor.web3.SendTransactionError).to.be.true;
@@ -2157,25 +1771,14 @@ describe("burn", () => {
       }
     });
     it("should failed when `free_transfer_allowed` is false", async () => {
-      const { configPda, feeRecipientKeypair, buyBurnAuthorityKeypair } =
-        await initializeConfig();
-      const {
-        mintKeypair,
-        marketPda,
-        tokenVaultAta,
-        nativeVaultPda,
-        extraAccountMetaListPda,
-      } = burn;
+      const { configPda, feeRecipientKeypair, buyBurnAuthorityKeypair } = await initializeConfig();
+      const { mintKeypair, marketPda, tokenVaultAta, nativeVaultPda, extraAccountMetaListPda } = burn;
 
       const payer = anchor.web3.Keypair.generate();
       const payerBalanceBefore = 1e9;
-      let tx = await anchor
-        .getProvider()
-        .connection.requestAirdrop(payer.publicKey, payerBalanceBefore);
+      let tx = await anchor.getProvider().connection.requestAirdrop(payer.publicKey, payerBalanceBefore);
       await confirmTransaction(tx);
-      tx = await anchor
-        .getProvider()
-        .connection.requestAirdrop(feeRecipientKeypair.publicKey, 1e9);
+      tx = await anchor.getProvider().connection.requestAirdrop(feeRecipientKeypair.publicKey, 1e9);
       await confirmTransaction(tx);
 
       const tokenRecipient = getAssociatedTokenAddressSync(
@@ -2193,11 +1796,7 @@ describe("burn", () => {
       );
 
       const [burnAccountPda] = anchor.web3.PublicKey.findProgramAddressSync(
-        [
-          Buffer.from("burn_account"),
-          payer.publicKey.toBuffer(),
-          configPda.toBuffer(),
-        ],
+        [Buffer.from("burn_account"), payer.publicKey.toBuffer(), configPda.toBuffer()],
         program.programId
       );
       const ix1 = await program.methods
@@ -2210,11 +1809,7 @@ describe("burn", () => {
         .instruction();
 
       const marketBefore = await program.account.market.fetch(marketPda);
-      const { y, fee, total } = compute_swap_with_fee(
-        1000e6,
-        marketBefore.remainingSupply.toNumber(),
-        true
-      );
+      const { y, fee, total } = compute_swap_with_fee(1000e6, marketBefore.remainingSupply.toNumber(), true);
       const ix2 = await program.methods
         .buyBurn({
           nextNonce: 1,
@@ -2238,12 +1833,7 @@ describe("burn", () => {
 
       const buyTx = new anchor.web3.Transaction().add(ix0, ix1, ix2);
       buyTx.feePayer = wallet.publicKey;
-      await sendAndConfirmTransaction(
-        buyTx,
-        wallet,
-        payer,
-        buyBurnAuthorityKeypair
-      );
+      await sendAndConfirmTransaction(buyTx, wallet, payer, buyBurnAuthorityKeypair);
 
       const feeTokenRecipient = getAssociatedTokenAddressSync(
         mintKeypair.publicKey,
@@ -2258,53 +1848,53 @@ describe("burn", () => {
         mintKeypair.publicKey,
         TOKEN_2022_PROGRAM_ID
       );
-      const transferCheckedIx =
-        await createTransferCheckedWithTransferHookInstruction(
-          program.provider.connection,
-          tokenRecipient,
-          mintKeypair.publicKey,
-          feeTokenRecipient,
-          payer.publicKey,
-          BigInt(1e6),
-          DECIMALS,
-          undefined,
-          undefined,
-          TOKEN_2022_PROGRAM_ID
-        );
-      const transferCheckedTx = new anchor.web3.Transaction().add(
-        createATAIx,
-        transferCheckedIx
+      const transferCheckedIx = await createTransferCheckedWithTransferHookInstruction(
+        program.provider.connection,
+        tokenRecipient,
+        mintKeypair.publicKey,
+        feeTokenRecipient,
+        payer.publicKey,
+        BigInt(1e6),
+        DECIMALS,
+        undefined,
+        undefined,
+        TOKEN_2022_PROGRAM_ID
       );
+      const transferCheckedTx = new anchor.web3.Transaction().add(createATAIx, transferCheckedIx);
       transferCheckedTx.feePayer = wallet.publicKey;
       try {
         await sendAndConfirmTransaction(transferCheckedTx, wallet, payer);
-        expect.fail("should have failed");
+        expect(
+          await hooksProgram.views.isTransferAllowed(null, null, {
+            accounts: {
+              market: marketPda,
+            },
+          })
+        ).to.be.true;
+        console.log(`Transfer allowed`);
       } catch (e) {
+        console.log(`Transfer disallowed`);
+        expect(
+          await hooksProgram.views.isTransferAllowed(null, null, {
+            accounts: {
+              market: marketPda,
+            },
+          })
+        ).to.be.false;
         expect(e instanceof anchor.web3.SendTransactionError).to.be.true;
         const sendTxError = e as anchor.web3.SendTransactionError;
         expect(sendTxError.message.includes("TransferNotAllowed")).to.be.true;
       }
     });
     it("should succeed when recipient is black hole", async () => {
-      const { configPda, feeRecipientKeypair, buyBurnAuthorityKeypair } =
-        await initializeConfig();
-      const {
-        mintKeypair,
-        marketPda,
-        tokenVaultAta,
-        nativeVaultPda,
-        extraAccountMetaListPda,
-      } = burn;
+      const { configPda, feeRecipientKeypair, buyBurnAuthorityKeypair } = await initializeConfig();
+      const { mintKeypair, marketPda, tokenVaultAta, nativeVaultPda, extraAccountMetaListPda } = burn;
 
       const payer = anchor.web3.Keypair.generate();
       const payerBalanceBefore = 1e9;
-      let tx = await anchor
-        .getProvider()
-        .connection.requestAirdrop(payer.publicKey, payerBalanceBefore);
+      let tx = await anchor.getProvider().connection.requestAirdrop(payer.publicKey, payerBalanceBefore);
       await confirmTransaction(tx);
-      tx = await anchor
-        .getProvider()
-        .connection.requestAirdrop(feeRecipientKeypair.publicKey, 1e9);
+      tx = await anchor.getProvider().connection.requestAirdrop(feeRecipientKeypair.publicKey, 1e9);
       await confirmTransaction(tx);
 
       const tokenRecipient = getAssociatedTokenAddressSync(
@@ -2322,11 +1912,7 @@ describe("burn", () => {
       );
 
       const [burnAccountPda] = anchor.web3.PublicKey.findProgramAddressSync(
-        [
-          Buffer.from("burn_account"),
-          payer.publicKey.toBuffer(),
-          configPda.toBuffer(),
-        ],
+        [Buffer.from("burn_account"), payer.publicKey.toBuffer(), configPda.toBuffer()],
         program.programId
       );
       const ix1 = await program.methods
@@ -2339,11 +1925,7 @@ describe("burn", () => {
         .instruction();
 
       const marketBefore = await program.account.market.fetch(marketPda);
-      const { y, fee, total } = compute_swap_with_fee(
-        1000e6,
-        marketBefore.remainingSupply.toNumber(),
-        true
-      );
+      const { y, fee, total } = compute_swap_with_fee(1000e6, marketBefore.remainingSupply.toNumber(), true);
       const ix2 = await program.methods
         .buyBurn({
           nextNonce: 1,
@@ -2367,12 +1949,7 @@ describe("burn", () => {
 
       const buyTx = new anchor.web3.Transaction().add(ix0, ix1, ix2);
       buyTx.feePayer = wallet.publicKey;
-      await sendAndConfirmTransaction(
-        buyTx,
-        wallet,
-        payer,
-        buyBurnAuthorityKeypair
-      );
+      await sendAndConfirmTransaction(buyTx, wallet, payer, buyBurnAuthorityKeypair);
 
       const blackHoleRecipient = getAssociatedTokenAddressSync(
         mintKeypair.publicKey,
@@ -2387,23 +1964,19 @@ describe("burn", () => {
         mintKeypair.publicKey,
         TOKEN_2022_PROGRAM_ID
       );
-      const transferCheckedIx =
-        await createTransferCheckedWithTransferHookInstruction(
-          program.provider.connection,
-          tokenRecipient,
-          mintKeypair.publicKey,
-          blackHoleRecipient,
-          payer.publicKey,
-          BigInt(1e6),
-          DECIMALS,
-          undefined,
-          undefined,
-          TOKEN_2022_PROGRAM_ID
-        );
-      const transferCheckedTx = new anchor.web3.Transaction().add(
-        createATAIx,
-        transferCheckedIx
+      const transferCheckedIx = await createTransferCheckedWithTransferHookInstruction(
+        program.provider.connection,
+        tokenRecipient,
+        mintKeypair.publicKey,
+        blackHoleRecipient,
+        payer.publicKey,
+        BigInt(1e6),
+        DECIMALS,
+        undefined,
+        undefined,
+        TOKEN_2022_PROGRAM_ID
       );
+      const transferCheckedTx = new anchor.web3.Transaction().add(createATAIx, transferCheckedIx);
       transferCheckedTx.feePayer = wallet.publicKey;
       await sendAndConfirmTransaction(transferCheckedTx, wallet, payer);
       const account = await getAccount(
@@ -2415,25 +1988,14 @@ describe("burn", () => {
       expect(account.amount).to.eq(BigInt(1e6));
     });
     it("should succeed", async () => {
-      const { configPda, feeRecipientKeypair, buyBurnAuthorityKeypair } =
-        await initializeConfig();
-      const {
-        mintKeypair,
-        marketPda,
-        tokenVaultAta,
-        nativeVaultPda,
-        extraAccountMetaListPda,
-      } = burn;
+      const { configPda, feeRecipientKeypair, buyBurnAuthorityKeypair } = await initializeConfig();
+      const { mintKeypair, marketPda, tokenVaultAta, nativeVaultPda, extraAccountMetaListPda } = burn;
 
       const payer = anchor.web3.Keypair.generate();
       const payerBalanceBefore = 1e9 * 80000;
-      let tx = await anchor
-        .getProvider()
-        .connection.requestAirdrop(payer.publicKey, payerBalanceBefore);
+      let tx = await anchor.getProvider().connection.requestAirdrop(payer.publicKey, payerBalanceBefore);
       await confirmTransaction(tx);
-      tx = await anchor
-        .getProvider()
-        .connection.requestAirdrop(feeRecipientKeypair.publicKey, 1e9);
+      tx = await anchor.getProvider().connection.requestAirdrop(feeRecipientKeypair.publicKey, 1e9);
       await confirmTransaction(tx);
 
       const tokenRecipient = getAssociatedTokenAddressSync(
@@ -2451,11 +2013,7 @@ describe("burn", () => {
       );
 
       const [burnAccountPda] = anchor.web3.PublicKey.findProgramAddressSync(
-        [
-          Buffer.from("burn_account"),
-          payer.publicKey.toBuffer(),
-          configPda.toBuffer(),
-        ],
+        [Buffer.from("burn_account"), payer.publicKey.toBuffer(), configPda.toBuffer()],
         program.programId
       );
       const ix1 = await program.methods
@@ -2469,11 +2027,7 @@ describe("burn", () => {
 
       let buy_amount = (MAX_TOKEN_SUPPLY * BigInt(98)) / BigInt(100);
       const marketBefore = await program.account.market.fetch(marketPda);
-      const { y, fee, total } = compute_swap_with_fee(
-        buy_amount,
-        marketBefore.remainingSupply.toNumber(),
-        true
-      );
+      const { y, fee, total } = compute_swap_with_fee(buy_amount, marketBefore.remainingSupply.toNumber(), true);
       const ix2 = await program.methods
         .buyBurn({
           nextNonce: 1,
@@ -2510,9 +2064,7 @@ describe("burn", () => {
       const ix4 = await program.methods
         .buyBurn({
           nextNonce: 2,
-          nextBuyAmount: new anchor.BN(
-            (buy_amount + MAX_TOKEN_SUPPLY / BigInt(100)).toString()
-          ),
+          nextBuyAmount: new anchor.BN((buy_amount + MAX_TOKEN_SUPPLY / BigInt(100)).toString()),
           maxPay: new anchor.BN(payerBalanceBefore.toString()),
         })
         .accountsPartial({
@@ -2531,26 +2083,14 @@ describe("burn", () => {
         .instruction();
       const buyTx = new anchor.web3.Transaction().add(ix0, ix1, ix2, ix4);
       buyTx.feePayer = wallet.publicKey;
-      await sendAndConfirmTransaction(
-        buyTx,
-        wallet,
-        payer,
-        buyBurnAuthorityKeypair
-      );
+      await sendAndConfirmTransaction(buyTx, wallet, payer, buyBurnAuthorityKeypair);
 
       const market = await program.account.market.fetch(marketPda);
       expect(market.freeTransferAllowed).to.be.false; // funds still have assets
     });
     it("success using `use_funds_buy_burn`", async () => {
-      const { configPda, feeRecipientKeypair, buyBurnAuthorityKeypair } =
-        await initializeConfig();
-      const {
-        mintKeypair,
-        marketPda,
-        tokenVaultAta,
-        nativeVaultPda,
-        extraAccountMetaListPda,
-      } = burn;
+      const { configPda, feeRecipientKeypair, buyBurnAuthorityKeypair } = await initializeConfig();
+      const { mintKeypair, marketPda, tokenVaultAta, nativeVaultPda, extraAccountMetaListPda } = burn;
 
       const tokenRecipient = getAssociatedTokenAddressSync(
         mintKeypair.publicKey,
@@ -2582,15 +2122,8 @@ describe("burn", () => {
       expect(market.freeTransferAllowed).to.be.false; // funds still have assets
     });
     it("success using `use_funds_buy_burn` and change `free_transfer_allowed` is true", async () => {
-      const { configPda, feeRecipientKeypair, buyBurnAuthorityKeypair } =
-        await initializeConfig();
-      const {
-        mintKeypair,
-        marketPda,
-        tokenVaultAta,
-        nativeVaultPda,
-        extraAccountMetaListPda,
-      } = burn;
+      const { configPda, feeRecipientKeypair, buyBurnAuthorityKeypair } = await initializeConfig();
+      const { mintKeypair, marketPda, tokenVaultAta, nativeVaultPda, extraAccountMetaListPda } = burn;
 
       const tokenRecipient = getAssociatedTokenAddressSync(
         mintKeypair.publicKey,
@@ -2622,25 +2155,14 @@ describe("burn", () => {
       expect(market.freeTransferAllowed).to.be.true; // funds still have assets
     });
     it("success using `transfer_checked` instruction when `free_transfer_allowed` is true", async () => {
-      const { configPda, feeRecipientKeypair, buyBurnAuthorityKeypair } =
-        await initializeConfig();
-      const {
-        mintKeypair,
-        marketPda,
-        tokenVaultAta,
-        nativeVaultPda,
-        extraAccountMetaListPda,
-      } = burn;
+      const { configPda, feeRecipientKeypair, buyBurnAuthorityKeypair } = await initializeConfig();
+      const { mintKeypair, marketPda, tokenVaultAta, nativeVaultPda, extraAccountMetaListPda } = burn;
 
       const payer = anchor.web3.Keypair.generate();
       const payerBalanceBefore = 1e9 * 100;
-      let tx = await anchor
-        .getProvider()
-        .connection.requestAirdrop(payer.publicKey, payerBalanceBefore);
+      let tx = await anchor.getProvider().connection.requestAirdrop(payer.publicKey, payerBalanceBefore);
       await confirmTransaction(tx);
-      tx = await anchor
-        .getProvider()
-        .connection.requestAirdrop(feeRecipientKeypair.publicKey, 1e9);
+      tx = await anchor.getProvider().connection.requestAirdrop(feeRecipientKeypair.publicKey, 1e9);
       await confirmTransaction(tx);
 
       const tokenRecipient = getAssociatedTokenAddressSync(
@@ -2658,11 +2180,7 @@ describe("burn", () => {
       );
 
       const [burnAccountPda] = anchor.web3.PublicKey.findProgramAddressSync(
-        [
-          Buffer.from("burn_account"),
-          payer.publicKey.toBuffer(),
-          configPda.toBuffer(),
-        ],
+        [Buffer.from("burn_account"), payer.publicKey.toBuffer(), configPda.toBuffer()],
         program.programId
       );
       const ix1 = await program.methods
@@ -2675,11 +2193,7 @@ describe("burn", () => {
         .instruction();
 
       const marketBefore = await program.account.market.fetch(marketPda);
-      const { y, fee, total } = compute_swap_with_fee(
-        1000e6,
-        marketBefore.remainingSupply.toNumber(),
-        true
-      );
+      const { y, fee, total } = compute_swap_with_fee(1000e6, marketBefore.remainingSupply.toNumber(), true);
       const ix2 = await program.methods
         .buyBurn({
           nextNonce: 1,
@@ -2703,69 +2217,59 @@ describe("burn", () => {
 
       const buyTx = new anchor.web3.Transaction().add(ix0, ix1, ix2);
       buyTx.feePayer = wallet.publicKey;
-      await sendAndConfirmTransaction(
-        buyTx,
-        wallet,
-        payer,
-        buyBurnAuthorityKeypair
-      );
+      await sendAndConfirmTransaction(buyTx, wallet, payer, buyBurnAuthorityKeypair);
 
-      const feeTokenRecipient = getAssociatedTokenAddressSync(
+      const configRecipient = getAssociatedTokenAddressSync(
         mintKeypair.publicKey,
-        feeRecipientKeypair.publicKey,
-        undefined,
+        configPda,
+        true,
         TOKEN_2022_PROGRAM_ID
       );
       const createATAIx = createAssociatedTokenAccountInstruction(
         wallet.publicKey,
-        feeTokenRecipient,
-        feeRecipientKeypair.publicKey,
+        configRecipient,
+        configPda,
         mintKeypair.publicKey,
         TOKEN_2022_PROGRAM_ID
       );
-      const transferCheckedIx =
-        await createTransferCheckedWithTransferHookInstruction(
-          program.provider.connection,
-          tokenRecipient,
-          mintKeypair.publicKey,
-          feeTokenRecipient,
-          payer.publicKey,
-          BigInt(1e6),
-          DECIMALS,
-          undefined,
-          undefined,
-          TOKEN_2022_PROGRAM_ID
-        );
-      const transferCheckedTx = new anchor.web3.Transaction().add(
-        createATAIx,
-        transferCheckedIx
+      const transferCheckedIx = await createTransferCheckedWithTransferHookInstruction(
+        program.provider.connection,
+        tokenRecipient,
+        mintKeypair.publicKey,
+        configRecipient,
+        payer.publicKey,
+        BigInt(1e6),
+        DECIMALS,
+        undefined,
+        undefined,
+        TOKEN_2022_PROGRAM_ID
       );
+      const transferCheckedTx = new anchor.web3.Transaction();
+      let isTransferAllowed = await hooksProgram.views.isTransferAllowed(null, null, {
+        accounts: {
+          market: marketPda,
+        },
+      });
+      transferCheckedTx.add(createATAIx);
+      transferCheckedTx.add(transferCheckedIx);
       transferCheckedTx.feePayer = wallet.publicKey;
       await sendAndConfirmTransaction(transferCheckedTx, wallet, payer);
 
       const account = await getAccount(
         anchor.getProvider().connection,
-        feeTokenRecipient,
+        configRecipient,
         undefined,
         TOKEN_2022_PROGRAM_ID
       );
-      expect(account.amount).to.eq(BigInt(1e6));
+      expect(Number(account.amount.toString())).to.eq(Number(BigInt(1e6).toString()));
     });
     it("success using `buy_token` instruction when `free_transfer_allowed` is true", async () => {
       const { configPda, feeRecipientKeypair } = await initializeConfig();
-      const {
-        mintKeypair,
-        marketPda,
-        tokenVaultAta,
-        nativeVaultPda,
-        extraAccountMetaListPda,
-      } = burn;
+      const { mintKeypair, marketPda, tokenVaultAta, nativeVaultPda, extraAccountMetaListPda } = burn;
 
       const payer = anchor.web3.Keypair.generate();
       const payerBalanceBefore = 1e9 * 100;
-      const tx = await anchor
-        .getProvider()
-        .connection.requestAirdrop(payer.publicKey, payerBalanceBefore);
+      const tx = await anchor.getProvider().connection.requestAirdrop(payer.publicKey, payerBalanceBefore);
       await confirmTransaction(tx);
 
       const tokenRecipient = getAssociatedTokenAddressSync(
@@ -2782,11 +2286,7 @@ describe("burn", () => {
         TOKEN_2022_PROGRAM_ID
       );
       const marketBefore = await program.account.market.fetch(marketPda);
-      const { y, fee, total } = compute_swap_with_fee(
-        1000e6,
-        marketBefore.remainingSupply.toNumber(),
-        true
-      );
+      const { y, fee, total } = compute_swap_with_fee(1000e6, marketBefore.remainingSupply.toNumber(), true);
       const ix1 = await program.methods
         .buyToken({
           buyAmount: new anchor.BN(1000e6),
@@ -2829,19 +2329,11 @@ describe("burn", () => {
     });
     it("success using `buy_token_exact_in` instruction when `free_transfer_allowed` is true", async () => {
       const { configPda, feeRecipientKeypair } = await initializeConfig();
-      const {
-        mintKeypair,
-        marketPda,
-        tokenVaultAta,
-        nativeVaultPda,
-        extraAccountMetaListPda,
-      } = burn;
+      const { mintKeypair, marketPda, tokenVaultAta, nativeVaultPda, extraAccountMetaListPda } = burn;
 
       const payer = anchor.web3.Keypair.generate();
       const payerBalanceBefore = 1e9 * 100;
-      const tx = await anchor
-        .getProvider()
-        .connection.requestAirdrop(payer.publicKey, payerBalanceBefore);
+      const tx = await anchor.getProvider().connection.requestAirdrop(payer.publicKey, payerBalanceBefore);
       await confirmTransaction(tx);
 
       const tokenRecipient = getAssociatedTokenAddressSync(
@@ -2858,10 +2350,7 @@ describe("burn", () => {
         TOKEN_2022_PROGRAM_ID
       );
       const marketBefore = await program.account.market.fetch(marketPda);
-      const { buy_amount } = compute_buy_token_exact_in_with_fee(
-        1e9,
-        marketBefore.remainingSupply.toNumber()
-      );
+      const { buy_amount } = compute_buy_token_exact_in_with_fee(1e9, marketBefore.remainingSupply.toNumber());
       const ix1 = await program.methods
         .buyTokenExactIn({
           payAmount: new anchor.BN(1e9),
@@ -2903,25 +2392,14 @@ describe("burn", () => {
       expect(account.amount).to.eq(buy_amount);
     });
     it("success using `buy_burn_exact_in` instruction", async () => {
-      const { configPda, feeRecipientKeypair, buyBurnAuthorityKeypair } =
-        await initializeConfig();
-      const {
-        mintKeypair,
-        marketPda,
-        tokenVaultAta,
-        nativeVaultPda,
-        extraAccountMetaListPda,
-      } = burn;
+      const { configPda, feeRecipientKeypair, buyBurnAuthorityKeypair } = await initializeConfig();
+      const { mintKeypair, marketPda, tokenVaultAta, nativeVaultPda, extraAccountMetaListPda } = burn;
 
       const payer = anchor.web3.Keypair.generate();
       const payerBalanceBefore = 1e9 * 1;
-      let tx = await anchor
-        .getProvider()
-        .connection.requestAirdrop(payer.publicKey, payerBalanceBefore);
+      let tx = await anchor.getProvider().connection.requestAirdrop(payer.publicKey, payerBalanceBefore);
       await confirmTransaction(tx);
-      tx = await anchor
-        .getProvider()
-        .connection.requestAirdrop(feeRecipientKeypair.publicKey, 1e9);
+      tx = await anchor.getProvider().connection.requestAirdrop(feeRecipientKeypair.publicKey, 1e9);
       await confirmTransaction(tx);
 
       const tokenRecipient = getAssociatedTokenAddressSync(
@@ -2958,26 +2436,14 @@ describe("burn", () => {
         .instruction();
       const buyTx = new anchor.web3.Transaction().add(ix1);
       buyTx.feePayer = wallet.publicKey;
-      await sendAndConfirmTransaction(
-        buyTx,
-        wallet,
-        payer,
-        buyBurnAuthorityKeypair
-      );
+      await sendAndConfirmTransaction(buyTx, wallet, payer, buyBurnAuthorityKeypair);
     });
   });
 
   describe("#use_funds_buy_burn", () => {
     it("should failed owner is not black hole", async () => {
-      const { configPda, feeRecipientKeypair, buyBurnAuthorityKeypair } =
-        await initializeConfig();
-      const {
-        mintKeypair,
-        marketPda,
-        tokenVaultAta,
-        nativeVaultPda,
-        extraAccountMetaListPda,
-      } = burn;
+      const { configPda, feeRecipientKeypair, buyBurnAuthorityKeypair } = await initializeConfig();
+      const { mintKeypair, marketPda, tokenVaultAta, nativeVaultPda, extraAccountMetaListPda } = burn;
 
       const payer = anchor.web3.Keypair.generate();
       const tokenRecipient = getAssociatedTokenAddressSync(
@@ -3021,15 +2487,8 @@ describe("burn", () => {
       }
     });
     it("should failed if max buy amount is 0", async () => {
-      const { configPda, feeRecipientKeypair, buyBurnAuthorityKeypair } =
-        await initializeConfig();
-      const {
-        mintKeypair,
-        marketPda,
-        tokenVaultAta,
-        nativeVaultPda,
-        extraAccountMetaListPda,
-      } = burn;
+      const { configPda, feeRecipientKeypair, buyBurnAuthorityKeypair } = await initializeConfig();
+      const { mintKeypair, marketPda, tokenVaultAta, nativeVaultPda, extraAccountMetaListPda } = burn;
 
       const tokenRecipient = getAssociatedTokenAddressSync(
         mintKeypair.publicKey,
@@ -3069,8 +2528,7 @@ describe("burn", () => {
   describe("#sell_token", () => {
     it("should failed if native vault account mismatch", async () => {
       const { configPda, feeRecipientKeypair } = await initializeConfig();
-      const { mintKeypair, marketPda, tokenVaultAta, extraAccountMetaListPda } =
-        await initializeMarket(configPda);
+      const { mintKeypair, marketPda, tokenVaultAta, extraAccountMetaListPda } = await initializeMarket(configPda);
 
       const tokenRecipient = await getOrCreateAssociatedTokenAccount(
         anchor.getProvider().connection,
@@ -3103,20 +2561,13 @@ describe("burn", () => {
       } catch (e) {
         expect(e instanceof anchor.AnchorError).to.be.true;
         const anchorError = e as anchor.AnchorError;
-        expect(anchorError.error.errorCode.code).to.be.eq(
-          "NativeVaultAccountMismatch"
-        );
+        expect(anchorError.error.errorCode.code).to.be.eq("NativeVaultAccountMismatch");
       }
     });
 
     it("should fail if token vault account mismatch", async () => {
       const { configPda, feeRecipientKeypair } = await initializeConfig();
-      const {
-        mintKeypair,
-        marketPda,
-        nativeVaultPda,
-        extraAccountMetaListPda,
-      } = await initializeMarket(configPda);
+      const { mintKeypair, marketPda, nativeVaultPda, extraAccountMetaListPda } = await initializeMarket(configPda);
       const { tokenVaultAta: tokenVaultAtaOther } = await initializeMarket(
         configPda,
         undefined,
@@ -3155,20 +2606,14 @@ describe("burn", () => {
       } catch (e) {
         expect(e instanceof anchor.AnchorError).to.be.true;
         const anchorError = e as anchor.AnchorError;
-        expect(anchorError.error.errorCode.code).to.be.eq(
-          "TokenVaultAccountMismatch"
-        );
+        expect(anchorError.error.errorCode.code).to.be.eq("TokenVaultAccountMismatch");
       }
     });
 
     it("should failed if fee recipient account mismatch", async () => {
-      const {
-        mintKeypair,
-        marketPda,
-        tokenVaultAta,
-        nativeVaultPda,
-        extraAccountMetaListPda,
-      } = await initializeMarket(config.configPda);
+      const { mintKeypair, marketPda, tokenVaultAta, nativeVaultPda, extraAccountMetaListPda } = await initializeMarket(
+        config.configPda
+      );
 
       const tokenRecipient = await getOrCreateAssociatedTokenAccount(
         anchor.getProvider().connection,
@@ -3201,20 +2646,13 @@ describe("burn", () => {
       } catch (e) {
         expect(e instanceof anchor.AnchorError).to.be.true;
         const anchorError = e as anchor.AnchorError;
-        expect(anchorError.error.errorCode.code).to.be.eq(
-          "FeeRecipientMismatch"
-        );
+        expect(anchorError.error.errorCode.code).to.be.eq("FeeRecipientMismatch");
       }
     });
 
     it("should failed if token payer mint mismatch", async () => {
       const { configPda, feeRecipientKeypair } = await initializeConfig();
-      const {
-        marketPda,
-        tokenVaultAta,
-        nativeVaultPda,
-        extraAccountMetaListPda,
-      } = await initializeMarket(configPda);
+      const { marketPda, tokenVaultAta, nativeVaultPda, extraAccountMetaListPda } = await initializeMarket(configPda);
       const { mintKeypair: mintKeypairOther } = await initializeMarket(
         configPda,
         undefined,
@@ -3261,13 +2699,9 @@ describe("burn", () => {
 
     it("should failed if token payer authority mismatch", async () => {
       const { configPda, feeRecipientKeypair } = await initializeConfig();
-      const {
-        mintKeypair,
-        marketPda,
-        tokenVaultAta,
-        nativeVaultPda,
-        extraAccountMetaListPda,
-      } = await initializeMarket(configPda);
+      const { mintKeypair, marketPda, tokenVaultAta, nativeVaultPda, extraAccountMetaListPda } = await initializeMarket(
+        configPda
+      );
 
       const tokenRecipient = await getOrCreateAssociatedTokenAccount(
         anchor.getProvider().connection,
@@ -3306,13 +2740,9 @@ describe("burn", () => {
 
     it("should failed if sell amount is zero", async () => {
       const { configPda, feeRecipientKeypair } = await initializeConfig();
-      const {
-        mintKeypair,
-        marketPda,
-        tokenVaultAta,
-        nativeVaultPda,
-        extraAccountMetaListPda,
-      } = await initializeMarket(configPda);
+      const { mintKeypair, marketPda, tokenVaultAta, nativeVaultPda, extraAccountMetaListPda } = await initializeMarket(
+        configPda
+      );
 
       const tokenRecipient = await getOrCreateAssociatedTokenAccount(
         anchor.getProvider().connection,
@@ -3351,13 +2781,9 @@ describe("burn", () => {
 
     it("should failed if receive amount too small", async () => {
       const { configPda, feeRecipientKeypair } = await initializeConfig();
-      const {
-        mintKeypair,
-        marketPda,
-        tokenVaultAta,
-        nativeVaultPda,
-        extraAccountMetaListPda,
-      } = await initializeMarket(configPda);
+      const { mintKeypair, marketPda, tokenVaultAta, nativeVaultPda, extraAccountMetaListPda } = await initializeMarket(
+        configPda
+      );
 
       const payer = anchor.web3.Keypair.generate();
       const payerBalanceBefore = 1e9 * 1000e4;
@@ -3376,11 +2802,7 @@ describe("burn", () => {
         TOKEN_2022_PROGRAM_ID
       );
       const buyAmount = BigInt(6e8) * BigInt(1e6);
-      const { y, fee, total } = compute_swap_with_fee(
-        buyAmount,
-        MAX_TOKEN_SUPPLY,
-        true
-      );
+      const { y, fee, total } = compute_swap_with_fee(buyAmount, MAX_TOKEN_SUPPLY, true);
       const buyIx = await program.methods
         .buyToken({
           buyAmount: new anchor.BN(buyAmount.toString()),
@@ -3442,23 +2864,15 @@ describe("burn", () => {
 
     it("should succeed", async () => {
       const { configPda, feeRecipientKeypair } = await initializeConfig();
-      const {
-        mintKeypair,
-        marketPda,
-        tokenVaultAta,
-        nativeVaultPda,
-        extraAccountMetaListPda,
-      } = await initializeMarket(configPda);
+      const { mintKeypair, marketPda, tokenVaultAta, nativeVaultPda, extraAccountMetaListPda } = await initializeMarket(
+        configPda
+      );
 
       const payer = anchor.web3.Keypair.generate();
       let payerBalanceBefore = 1e9 * 3000;
 
-      let nativeVaultBalanceBefore = await anchor
-        .getProvider()
-        .connection.getBalance(nativeVaultPda);
-      let feeRecipientBalanceBefore = await anchor
-        .getProvider()
-        .connection.getBalance(feeRecipientKeypair.publicKey);
+      let nativeVaultBalanceBefore = await anchor.getProvider().connection.getBalance(nativeVaultPda);
+      let feeRecipientBalanceBefore = await anchor.getProvider().connection.getBalance(feeRecipientKeypair.publicKey);
 
       const tokenRecipient = getAssociatedTokenAddressSync(
         mintKeypair.publicKey,
@@ -3474,11 +2888,7 @@ describe("burn", () => {
         TOKEN_2022_PROGRAM_ID
       );
       const buyAmount = BigInt(9e8) * BigInt(1e6);
-      const { y, fee, total } = compute_swap_with_fee(
-        buyAmount,
-        MAX_TOKEN_SUPPLY,
-        true
-      );
+      const { y, fee, total } = compute_swap_with_fee(buyAmount, MAX_TOKEN_SUPPLY, true);
       const buyIx = await program.methods
         .buyToken({
           buyAmount: new anchor.BN(buyAmount.toString()),
@@ -3553,24 +2963,14 @@ describe("burn", () => {
       tx.feePayer = wallet.publicKey;
       await sendAndConfirmTransaction(tx, wallet, payer);
 
-      let payerBalanceAfter = await anchor
-        .getProvider()
-        .connection.getBalance(payer.publicKey);
+      let payerBalanceAfter = await anchor.getProvider().connection.getBalance(payer.publicKey);
       // console.log(`before: ${payerBalanceBefore}, after: ${payerBalanceAfter}, buy_amount: ${y}, fee: ${fee}`);
       expect(payerBalanceBefore - payerBalanceAfter).to.eq(Number(y + fee));
-      let feeRecipientBalanceAfter = await anchor
-        .getProvider()
-        .connection.getBalance(feeRecipientKeypair.publicKey);
-      expect(feeRecipientBalanceAfter - feeRecipientBalanceBefore).to.eq(
-        Number(fee)
-      );
+      let feeRecipientBalanceAfter = await anchor.getProvider().connection.getBalance(feeRecipientKeypair.publicKey);
+      expect(feeRecipientBalanceAfter - feeRecipientBalanceBefore).to.eq(Number(fee));
       feeRecipientBalanceBefore = feeRecipientBalanceAfter;
-      let nativeVaultBalanceAfter = await anchor
-        .getProvider()
-        .connection.getBalance(nativeVaultPda);
-      expect(nativeVaultBalanceAfter - nativeVaultBalanceBefore).to.eq(
-        Number(y)
-      );
+      let nativeVaultBalanceAfter = await anchor.getProvider().connection.getBalance(nativeVaultPda);
+      expect(nativeVaultBalanceAfter - nativeVaultBalanceBefore).to.eq(Number(y));
       nativeVaultBalanceBefore = nativeVaultBalanceAfter;
       payerBalanceBefore = payerBalanceAfter;
 
@@ -3578,26 +2978,14 @@ describe("burn", () => {
       tx2.feePayer = wallet.publicKey;
       await sendAndConfirmTransaction(tx2, wallet, payer);
 
-      let payer2BalanceAfter = await anchor
-        .getProvider()
-        .connection.getBalance(payer2.publicKey);
-      payerBalanceAfter = await anchor
-        .getProvider()
-        .connection.getBalance(payer.publicKey);
+      let payer2BalanceAfter = await anchor.getProvider().connection.getBalance(payer2.publicKey);
+      payerBalanceAfter = await anchor.getProvider().connection.getBalance(payer.publicKey);
       expect(payerBalanceAfter).to.eq(payerBalanceBefore);
       // console.log(`payer2 after: ${payer2BalanceAfter}, sell_amount: ${sellY}, fee: ${sellFee}`);
-      feeRecipientBalanceAfter = await anchor
-        .getProvider()
-        .connection.getBalance(feeRecipientKeypair.publicKey);
-      expect(feeRecipientBalanceAfter - feeRecipientBalanceBefore).to.eq(
-        Number(sellFee)
-      );
-      nativeVaultBalanceAfter = await anchor
-        .getProvider()
-        .connection.getBalance(nativeVaultPda);
-      expect(nativeVaultBalanceBefore - nativeVaultBalanceAfter).to.eq(
-        Number(sellY)
-      );
+      feeRecipientBalanceAfter = await anchor.getProvider().connection.getBalance(feeRecipientKeypair.publicKey);
+      expect(feeRecipientBalanceAfter - feeRecipientBalanceBefore).to.eq(Number(sellFee));
+      nativeVaultBalanceAfter = await anchor.getProvider().connection.getBalance(nativeVaultPda);
+      expect(nativeVaultBalanceBefore - nativeVaultBalanceAfter).to.eq(Number(sellY));
       expect(payer2BalanceAfter).to.eq(Number(sellY - sellFee));
 
       const tokenRecipientBalanceAfter = await getAccount(
@@ -3626,10 +3014,7 @@ describe("burn", () => {
     if (config !== null) {
       return config;
     }
-    const [configPda] = anchor.web3.PublicKey.findProgramAddressSync(
-      [Buffer.from("config")],
-      program.programId
-    );
+    const [configPda] = anchor.web3.PublicKey.findProgramAddressSync([Buffer.from("config")], program.programId);
     const authorityKeypair = anchor.web3.Keypair.generate();
     const feeRecipientKeypair = anchor.web3.Keypair.generate();
     const buyBurnAuthorityKeypair = anchor.web3.Keypair.generate();
@@ -3660,29 +3045,18 @@ describe("burn", () => {
     transferHookEnabled: boolean = false
   ) {
     const mintKeypair = anchor.web3.Keypair.generate();
-    const [marketPda, marketBump] =
-      anchor.web3.PublicKey.findProgramAddressSync(
-        [
-          Buffer.from("market"),
-          Buffer.from(symbol),
-          configPublickey.toBuffer(),
-        ],
-        program.programId
-      );
-    const [nativeVaultPda, nativeVaultBump] =
-      anchor.web3.PublicKey.findProgramAddressSync(
-        [
-          Buffer.from("market_vault"),
-          Buffer.from(symbol),
-          configPublickey.toBuffer(),
-        ],
-        program.programId
-      );
-    const [extraAccountMetaListPda] =
-      anchor.web3.PublicKey.findProgramAddressSync(
-        [Buffer.from("extra-account-metas"), mintKeypair.publicKey.toBuffer()],
-        hooksProgram.programId
-      );
+    const [marketPda, marketBump] = anchor.web3.PublicKey.findProgramAddressSync(
+      [Buffer.from("market"), Buffer.from(symbol), configPublickey.toBuffer()],
+      program.programId
+    );
+    const [nativeVaultPda, nativeVaultBump] = anchor.web3.PublicKey.findProgramAddressSync(
+      [Buffer.from("market_vault"), Buffer.from(symbol), configPublickey.toBuffer()],
+      program.programId
+    );
+    const [extraAccountMetaListPda] = anchor.web3.PublicKey.findProgramAddressSync(
+      [Buffer.from("extra-account-metas"), mintKeypair.publicKey.toBuffer()],
+      hooksProgram.programId
+    );
     const initializeAccountMetaListIx = await hooksProgram.methods
       .initializeAccountMetaList(symbol)
       .accountsPartial({
@@ -3691,12 +3065,7 @@ describe("burn", () => {
       })
       .instruction();
 
-    const tokenVaultAta = getAssociatedTokenAddressSync(
-      mintKeypair.publicKey,
-      marketPda,
-      true,
-      TOKEN_2022_PROGRAM_ID
-    );
+    const tokenVaultAta = getAssociatedTokenAddressSync(mintKeypair.publicKey, marketPda, true, TOKEN_2022_PROGRAM_ID);
     const args = {
       name: name,
       symbol: symbol,
@@ -3743,30 +3112,19 @@ describe("burn", () => {
     };
   }
 
-  async function sendAndConfirmTransaction(
-    tx: anchor.web3.Transaction,
-    ...signers: Array<anchor.web3.Keypair>
-  ) {
-    const { lastValidBlockHeight, blockhash } = await anchor
-      .getProvider()
-      .connection.getLatestBlockhash();
+  async function sendAndConfirmTransaction(tx: anchor.web3.Transaction, ...signers: Array<anchor.web3.Keypair>) {
+    const { lastValidBlockHeight, blockhash } = await anchor.getProvider().connection.getLatestBlockhash();
     tx.lastValidBlockHeight = lastValidBlockHeight;
     tx.recentBlockhash = blockhash;
     tx.sign(...signers);
-    const signature = await anchor
-      .getProvider()
-      .connection.sendRawTransaction(tx.serialize());
+    const signature = await anchor.getProvider().connection.sendRawTransaction(tx.serialize());
     await confirmTransaction(signature);
     return { signature };
   }
 });
 
-export async function confirmTransaction(
-  signature: anchor.web3.TransactionSignature
-) {
-  const { lastValidBlockHeight, blockhash } = await anchor
-    .getProvider()
-    .connection.getLatestBlockhash();
+export async function confirmTransaction(signature: anchor.web3.TransactionSignature) {
+  const { lastValidBlockHeight, blockhash } = await anchor.getProvider().connection.getLatestBlockhash();
   await anchor.getProvider().connection.confirmTransaction(
     {
       signature: signature,

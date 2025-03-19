@@ -9,16 +9,11 @@ crate-type = ["cdylib", "lib"]
 name = "fee_distributor"
 
 [features]
-default = ["localnet"]
+default = []
 cpi = ["no-entrypoint"]
 no-entrypoint = []
 no-idl = []
 no-log-ix-name = []
-localnet = []
-devnet = []
-mainnet = []
-test-super = ["localnet", "reserve-super"]
-reserve-super = []
 idl-build = ["anchor-lang/idl-build"]
 
 [dependencies]
